@@ -1,0 +1,23 @@
+                'px' and 'p4lib.py' buglist
+(For use until a bug tracking system is established.)
+
+1. Piping px output into 'less' does not work on Windows.
+   E.g. 'px diff -du ./... | less'
+   - This happens when the px.exe launcher is not used to launch px.py
+     but instead px.py is launched directly via cmd.exe's PATHEXT
+     extension. If px.exe exists next to px.py then this problem goes
+     away.
+   Resolved: Not A Bug
+
+2. 'px -x - ...' does not work correctly.
+   See also: bug #1.
+   - This was the same mistaken diagnosis as bug #1.
+   Resolved: Not A Bug
+
+3. handle failure to connect to p4 repository (currently I get hangs)
+
+4. 'px diff -sn ./...py' fails
+
+5. 'px help asdf' does not print the expected output. Compare to 'p4
+   help asdf'.
+

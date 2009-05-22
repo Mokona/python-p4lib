@@ -1,0 +1,16 @@
+# A Makefile to do this: px.cpp -> px.exe
+
+# for release:
+CFLAGS=-D_CONSOLE -D_MBCS -DWIN32 -W3 -Ox -DNDEBUG -D_NDEBUG -MD 
+LDFLAGS=/subsystem:console kernel32.lib user32.lib gdi32.lib advapi32.lib shlwapi.lib
+# for debug:
+#  CFLAGS = -D_CONSOLE -D_MBCS /DWIN32 /Zi /Od /DDEBUG /D_DEBUG /MDd
+#  LDFLAGS += /DEBUG
+
+px.exe: px.cpp
+	cl -nologo $(CFLAGS) -c px.cpp
+	link -nologo $(LDFLAGS) px.obj
+
+clean:
+	if exist px.obj; del px.obj
+	if exist px.exe; del px.exe

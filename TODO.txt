@@ -1,0 +1,105 @@
+# TODOs for google code move
+
+- everything in BUGS.txt to issue tracker
+- add a bug for: px backout chokes on a *pending* changelist
+- setup.py and px/setup.py fixes (or just have 'px' be a part of the p4lib
+  setup.py) Yes, the latter.
+- fixup README.txt
+- Makefile.py, px/Makefile.py and see if can import px with "px:" ns in the
+  base one
+- fixup MANIFEST.in
+- split out TODO.txt?
+
+
+
+# Top o' the pile
+
+- figure out px.cpp vs. launcher.cpp, perhaps setuptools entry point?
+- switch px to logging package
+- update px in the Perforce Public depot!!
+- go through Komodo changes for stuff to incorporate
+
+
+# General TODOs
+
+- Search for "TODO" in all source files, including in the test suite
+  files.
+- Run pydoc over my p4lib.py and put that up on the release site. Will
+  have to clean it up a little bit. (pydoc is *not* polished.)
+
+# px TODO's:
+
+- provide facility to set default diff flag for "p4 diff" and "p4 describe",
+  via an ENVVAR or P4CONFIG setting
+- FUTURE: make it easy to run p4p locally to hopefully speed up local diffs,
+  etc. a la 'svn'
+- extend the logging with '*args' as in p4lib.py
+- px applypatch
+- 'px genpatch' mechanism to limit the area, e.g. 'px genpatch ./...'
+- px integrate??? (the p4x interface is kind of sucky)
+- Perhaps some way to note integrations that I care about and display
+  what changes need to be integrated where. Dunno if that is
+  reasonable.
+- perhaps some command to help clean up old dead changelists,
+  clientviews and changelists
+- adhere to 'p4 -s ...' in all output (blue sky)
+- make sure -G works with all commands (it is currently broken:
+  'px -G changes -d ./...'
+- add a '-a' option to 'p4 set' to dump the chain of settings and
+  perhaps some of the prose from the Tech Note describing how p4
+  config values are determined. The *reporting* parts of this could
+  be useful on Unix as well. I don't know that I want to get into
+  the business of *setting* cfg vars on Unix.
+- Perhaps determine if there are some useful merge algorithms that
+  could be fit into either P4MERGE usage or by extending the -a
+  options to 'p4 resolve'.
+- px annotate:
+    - The -i option tells annontate to follow branches.
+    - perhaps add a --html option to output something suitable
+      for browser viewing
+    - perhaps add a way to return the dictionary object
+- (Blue sky) an installer for 'px' that siloes Python. Perhaps this is
+  overkill but it would be nice to not have to worry about it. Perhaps
+  this is easy using McMillan's Installer or the other one.
+- px opened -a -u trentm: the "-u" option is new
+
+# p4lib.py TODO's:
+
+- Add test cases for the _raw arguments to each method.
+- Clean up p4options and _p4run usage. The commands using 'p4 -G' do not
+  cleanly abstract p4options overriding. This should probably come in a
+  wholesale conversion to using 'p4 -G' for all commands. Then a
+  convenient abstraction of p4options overriding can be setup.
+- .sync() test suite
+- Rationalize what None or [] means for 'files' arguments. Take
+  .submit() and .change() for example, the meaning varies. This
+  should be, if possible, made common. May need a "NotSelected"
+  default optional value that is not None.
+- Redo the current command docstring to show, primarily how *p4lib*
+  is used, rather than how a given p4lib command maps to the equiv
+  'p4' command line command.
+- a lot of commands:
+    admin, branch, branches,
+    client, clients, counter, counters, depot, depots, 
+    dirs, fix, fixes, flush, fstat, group, groups, help?, info*,
+    integrate, integrated, job, jobs, jobspec, label*, labels*,
+    labelsync*, lock, logger, obliterate, passwd, protect, reopen*,
+    resolved*, review, reviews, set,
+    triggers, typemap, unlock, user, users, verify
+- Make a mainline interface to this to mimic the p4 command line.
+  This would be extremely useful for debugging and testing it.
+  No real way to make the command line option -> optional func args
+  mapping.
+- The 'job' stuff: job, jobs, fix,fixes, jobspec, -s options on
+  submit and change (at least)
+
+
+# Someday/maybe
+
+- look at SIP for making Python C++ bindings
+- look at Pyste for making Python C++ bindings:
+  http://www.boost.org/libs/python/pyste/doc/introduction.html
+- reimplement with C++ API backend; look at P4Python:
+  http://public.perforce.com/guest/robert_cowham/perforce/API/python/index.html
+
+

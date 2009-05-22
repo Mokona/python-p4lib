@@ -1,0 +1,6 @@
+            Tests to add to the px/p4lib.py test suite.
+
+- test_p4lib_p4opts.py
+  Test each of the available, and disallowed, and bogus options.
+
+

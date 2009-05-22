@@ -1,0 +1,2 @@
+include *.py *.txt *.cpp Makefile* px px.exe MANIFEST.in
+recursive-include test *.txt *.py
