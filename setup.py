@@ -16,8 +16,10 @@ from distutils.core import setup
 #---- support routines
 
 def _getVersion():
-    import px
-    return px.__version__
+    from os.path import join, dirname
+    sys.path.insert(0, join(dirname(__file__), "lib"))
+    import p4lib
+    return p4lib.__version__
 
 def _getBinDir():
     """Return the current Python's bindir."""
