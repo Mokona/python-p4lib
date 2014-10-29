@@ -126,20 +126,27 @@ class ClientTestCase(unittest.TestCase):
         finally:
             os.chdir(top)
 
+    @unittest.skip('Cannot reach the limit with 2014.2 p4d version')
     def test_create_client_hit_license_limit(self):
         top = os.getcwd()
         andrew = testsupport.users['andrew']
         p4 = P4()
 
+        client_base_name = 'test_create_client_hit_license_limit'
+
         try:
             os.chdir(andrew['home'])
 
-            # Working without a license there should only be two clients
-            # allowed, both of which are taken up by the test harness.
-            client = {
-                'client': 'test_create_client_hit_license_limit',
-                'description': 'test_create_client_hit_license_limit',
-            }
+            # Without license, version is limited to 20 clients.
+            # We have two already.
+            for client_num in range(18):
+                client = {
+                    'client': client_base_name + str(client_num),
+                    'description': 'test_create_client_hit_license_limit',
+                }
+                p4.client(client=client)
+
+            # So this one is in excess and should fail
             self.failUnlessRaises(P4LibError, p4.client, client=client)
         finally:
             os.chdir(top)
