@@ -196,12 +196,12 @@ View:
     print "Setup to test: "
     import p4lib
     print "\tp4lib at %r" % p4lib.__file__
-    try:
-        px = which.which('px')
-        print "\tpx at %r" % px
-    except ImportError:
-        sys.stdout.flush()
-        os.system('px -V')
+    # try:
+    #     px = which.which('px')
+    #     print "\tpx at %r" % px
+    # except ImportError:
+    #     sys.stdout.flush()
+    #     os.system('px -V')
 
     print "="*50
 
@@ -233,7 +233,15 @@ def test(testModules, testDir=os.curdir, exclude=[]):
     # Aggregate the TestSuite's from each module into one big one.
     allSuites = []
     for moduleFile in testModules:
+        moduleFile = os.path.basename(moduleFile)
+
+        if moduleFile in exclude:
+            print "-> Exclude: " + moduleFile
+            continue
+
+        print "-> Import: " + moduleFile
         module = __import__(moduleFile, globals(), locals(), [])
+        # module = importlib.import_module(moduleFile)
         suite = getattr(module, "suite", None)
         if suite is not None:
             allSuites.append(suite())
