@@ -1378,9 +1378,15 @@ class P4:
         header2Re = re.compile("^==== (?P<depotFile>//.*?)#(?P<rev>\d+) - "\
                                "(?P<localFile>.+?) ===="\
                                "(?P<binary> \(binary\))?$")
+        header3Re = re.compile(r"^--- (?P<depotFile>//.*?)\s+.*$")
+        header4Re = re.compile(r"^\+\+\+ (?P<localFile>//.*?)\s+.*$")
+        print("Parsing a diff")
         for line in outputLines:
+            print(line)
             header1 = header1Re.match(line)
             header2 = header2Re.match(line)
+            header3 = header3Re.match(line)
+            header4 = header4Re.match(line)
             if header1:
                 hit = header1.groupdict()
                 hit['rev'] = int(hit['rev'])
@@ -1390,6 +1396,15 @@ class P4:
                 hit['rev'] = int(hit['rev'])
                 hit['binary'] = not not hit['binary'] # get boolean value
                 hits.append(hit)
+            elif header3:
+                hit = header3.groupdict()
+                print(hit)
+                hit['rev'] = 0
+                hit['binary'] = False
+                hits.append(hit)
+            elif header4:
+                hits[-1].update(header4.groupdict())
+                print(hits[-1])
             elif not hits[-1].has_key('text')\
               and line == "(... files differ ...)\n":
                 hits[-1]['notes'] = [line]
