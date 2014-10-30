@@ -129,7 +129,7 @@ def _setUp(p4d=None):
     os.makedirs(testsupport.tmp)
     os.makedirs(testsupport.p4root)
     if sys.platform.startswith('win'):
-        cmd = 'start "test server" /MIN %s -J journal -L log -p %s -r %s'\
+        cmd = 'start "test server" /MIN "%s" -J journal -L log -p %s -r %s'\
               % (p4d, testsupport.p4port, os.path.abspath(testsupport.p4root))
     else:
         cmd = '%s -J journal -L log -p %s -r %s &'\
