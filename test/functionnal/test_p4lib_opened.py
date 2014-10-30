@@ -35,9 +35,8 @@ class OpenedTestCase(unittest.TestCase):
             self.failIf(results, "Unexpected results: %r" % results)
             results = p4.opened(change='default')
             self.failIf(results, "Unexpected results: %r" % results)
-            results = p4.opened(change=123)
-            self.failIf(results, "Unexpected results: %r" % results)
 
+            self.failUnlessRaises(P4LibError, p4.opened, change=123)
             self.failUnlessRaises(P4LibError, p4.opened, change='foo')
         finally:
             os.chdir(top)
@@ -59,9 +58,9 @@ class OpenedTestCase(unittest.TestCase):
             self.failIf(results, "Unexpected results: %r" % results)
             results = p4.opened(change='default', allClients=1)
             self.failIf(results, "Unexpected results: %r" % results)
-            results = p4.opened(change=123, allClients=1)
-            self.failIf(results, "Unexpected results: %r" % results)
 
+            self.failUnlessRaises(P4LibError, p4.opened, change=123,
+                                  allClients=1)
             self.failUnlessRaises(P4LibError, p4.opened, change='foo',
                                   allClients=1)
         finally:
