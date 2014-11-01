@@ -3,14 +3,6 @@ import p4lib
 from mock import Mock
 
 
-def reroute_run(argv):
-    print(argv)
-    output = ""
-    error = ""
-    retval = ""
-    return output, error, retval
-
-
 def change_stdout(stdout):
     _, stderr, retval = p4lib._run.return_value
     p4lib._run.return_value = (stdout, stderr, retval)
@@ -23,13 +15,9 @@ PX_AND_PX2_DEFAULT_CHANGE = """//depot/apps/px/px.py#3 - edit default change (te
 NO_FILE_OPENED = "//depot/apps/px/px.py#3 - file(s) not opened on this client."
 
 
-class P4LibTestCase(unittest.TestCase):
+class OpenedTestCase(unittest.TestCase):
     def setUp(self):
         p4lib._run = Mock(spec='p4lib._run', return_value=("", "", 0))
-
-    def test_initilization(self):
-        p4 = p4lib.P4()
-        self.assertEqual('p4', p4.p4)
 
     def test_opened(self):
         change_stdout(PX_DEFAULT_CHANGE)
