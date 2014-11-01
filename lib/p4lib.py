@@ -687,7 +687,7 @@ class P4:
         filesIdx = lines.index("Affected files ...\n")
         desc['description'] = ""
         for line in lines[2:filesIdx-1]:
-            desc['description'] += line[1:] # drop the leading \t
+            desc['description'] += line[1:].strip() # drop the leading \t
         if shortForm:
             diffsIdx = len(lines)
         else:
