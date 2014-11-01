@@ -19,7 +19,7 @@ class OpenedTestCase(unittest.TestCase):
     def setUp(self):
         p4lib._run = Mock(spec='p4lib._run', return_value=("", "", 0))
 
-    def test_opened(self):
+    def test_global(self):
         change_stdout(PX_DEFAULT_CHANGE)
 
         p4 = p4lib.P4()
