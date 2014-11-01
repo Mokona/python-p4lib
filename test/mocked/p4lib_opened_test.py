@@ -1,11 +1,8 @@
 import unittest
 import p4lib
 from mock import Mock
+from test_utils import change_stdout
 
-
-def change_stdout(stdout):
-    _, stderr, retval = p4lib._run.return_value
-    p4lib._run.return_value = (stdout, stderr, retval)
 
 PX_DEFAULT_CHANGE = "//depot/apps/px/px.py#3 - edit default change (text)"
 PX_AND_PX2_DEFAULT_CHANGE = """//depot/apps/px/px.py#3 - edit default change (text)
