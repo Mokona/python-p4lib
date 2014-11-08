@@ -2,14 +2,6 @@ import unittest
 import p4lib
 from mock import Mock
 from test_utils import change_stdout, change_stdout_list
-from p4lib_opened_test import PX_AND_PX2_DEFAULT_CHANGE
-
-
-# Note: a better way should be to mock where and opened functions called
-# by change() when it needs information
-# At now, we're feeding _run() side_effects.
-# That's not really unit testing, as it's based on opened() and where()
-# functioning.
 
 
 TEMPORARY_FILENAME = "tempFile"
@@ -76,13 +68,19 @@ class ChangeTestCase(unittest.TestCase):
         self.assertNotIn("//depot/apps/px/px2.py", form)
 
     def test_creates_a_change_without_specified_file(self):
-        change_stdout_list([PX_AND_PX2_DEFAULT_CHANGE, CHANGE_CREATED])
+        change_stdout(CHANGE_CREATED)
 
         p4 = p4lib.P4()
+
+        p4.opened = Mock(spec='p4.opened',
+                         return_value=[
+                             {"depotFile": "//depot/apps/px/px.py"},
+                             {"depotFile": "//depot/apps/px/px2.py"}])
 
         result = p4.change(description="A description")
 
         self.__assert_change_for_creation(result)
+        p4.opened.assert_called_with()
 
         form = self.__get_form()
         self.assertIn("Change:\tnew", form)
@@ -91,19 +89,26 @@ class ChangeTestCase(unittest.TestCase):
         self.assertIn("//depot/apps/px/px2.py", form)
 
     def test_creates_a_change_with_specified_file(self):
-        change_stdout_list([WHERE_RESULT, CHANGE_CREATED])
+        change_stdout(CHANGE_CREATED)
+
+        filename = r"//depot/foo/file.py"
 
         p4 = p4lib.P4()
 
-        result = p4.change(files=["//depot/foo/file.py"],
+        p4.where = Mock(spec='p4.opened',
+                        return_value=[
+                            {"depotFile": filename}])
+
+        result = p4.change(files=[filename],
                            description=CHANGELIST_DESCRIPTION)
 
         self.__assert_change_for_creation(result)
+        p4.where.assert_called_with([filename])
 
         form = self.__get_form()
         self.assertIn("Change:\tnew", form)
         self.assertIn(CHANGELIST_DESCRIPTION, form)
-        self.assertIn("//depot/foo/file.py", form)
+        self.assertIn(filename, form)
 
     def test_can_get_information(self):
         change_stdout(CHANGE_INFORMATION)
@@ -120,6 +125,7 @@ class ChangeTestCase(unittest.TestCase):
         self.assertEqual("2002/05/08 23:24:54", result["date"])
 
     def test_can_change_description(self):
+        # Cannot mock change here for the internal call
         change_stdout_list([CHANGE_INFORMATION, CHANGE_UPDATED])
 
         p4 = p4lib.P4()
@@ -136,16 +142,23 @@ class ChangeTestCase(unittest.TestCase):
         self.assertIn(CHANGELIST_NEW_DESCRIPTION, form)
 
     def test_can_change_files(self):
+        # Cannot mock change here for the internal call
         change_stdout_list([CHANGE_INFORMATION,
-                            WHERE_RESULT,
                             CHANGE_UPDATED_WITH_COMMENTS])
+
+        filename = r"//depot/foo/file.py"
 
         p4 = p4lib.P4()
 
+        p4.where = Mock(spec='p4.opened',
+                        return_value=[
+                            {"depotFile": filename}])
+
         result = p4.change(change=1234,
-                           files=["//depot/foo/file.py"])
+                           files=[filename])
 
         self.__assert_called_with_tempfile()
+        p4.where.assert_called_with([filename])
 
         self.assertEqual("updated", result["action"])
         self.assertEqual(1234, result["change"])
