@@ -205,6 +205,10 @@ def _writeTemporaryForm(form):
     return formfile
 
 
+def _removeTemporaryForm(formfile):
+    if formfile:
+        os.remove(formfile)
+
 #---- public stuff
 
 
@@ -843,8 +847,7 @@ class P4:
 
             return change
         finally:
-            if formfile:
-                os.remove(formfile)
+            _removeTemporaryForm(formfile)
 
     def changes(self, files=[], followIntegrations=0, longOutput=0,
                 max=None, status=None, _raw=0, **p4options):
@@ -1809,8 +1812,7 @@ class P4:
                              % (argv, line))
             return result
         finally:
-            if formfile:
-                os.remove(formfile)
+            _removeTemporaryForm(formfile)
 
     def delete(self, files, change=None, _raw=0, **p4options):
         """Open an existing file to delete it from the depot.
@@ -1952,8 +1954,7 @@ class P4:
 
             return rv
         finally:
-            if formfile:
-                os.remove(formfile)
+            _removeTemporaryForm(formfile)
 
     def clients(self, _raw=0, **p4options):
         """Return a list of clients.
@@ -2084,8 +2085,7 @@ class P4:
 
             return rv
         finally:
-            if formfile:
-                os.remove(formfile)
+            _removeTemporaryForm(formfile)
 
     def labels(self, _raw=0, **p4options):
         """Return a list of labels.
@@ -2280,8 +2280,7 @@ class P4:
 
             return rv
         finally:
-            if formfile:
-                os.remove(formfile)
+            _removeTemporaryForm(formfile)
 
     def branches(self, _raw=0, **p4options):
         """Return a list of branches.
