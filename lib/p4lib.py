@@ -196,6 +196,15 @@ def _specialsLast(a, b, specials):
         return cmp(a, b)
 
 
+def _writeTemporaryForm(form):
+    formfile = tempfile.mktemp()
+    fout = open(formfile, 'w')
+    fout.write(form)
+    fout.close()
+
+    return formfile
+
+
 #---- public stuff
 
 
@@ -797,10 +806,7 @@ class P4:
                 else:
                     raise P4LibError("Incomplete/missing arguments.")
                 # Build submission form file.
-                formfile = tempfile.mktemp()
-                fout = open(formfile, 'w')
-                fout.write(form)
-                fout.close()
+                formfile = _writeTemporaryForm(form)
                 argv = ['change', '-i', '<', formfile]
             
             output, error, retval = self._p4run(argv, **p4options)
@@ -1730,12 +1736,9 @@ class P4:
                     files = [{'depotFile': f['depotFile']}\
                              for f in self.where(files)]
                 # Build submission form file.
-                formfile = tempfile.mktemp()
                 form = makeForm(files=files, description=description,
                                 change='new')
-                fout = open(formfile, 'w')
-                fout.write(form)
-                fout.close()
+                formfile = _writeTemporaryForm(form)
                 argv = ['submit', '-i', '<', formfile]
             else:
                 raise P4LibError("Incorrect arguments. You must specify "\
@@ -1919,10 +1922,7 @@ class P4:
                 form = makeForm(**cl)
 
                 # Build submission form file.
-                formfile = tempfile.mktemp()
-                fout = open(formfile, 'w')
-                fout.write(form)
-                fout.close()
+                formfile = _writeTemporaryForm(form)
                 argv = ['client', '-i', '<', formfile]
 
             output, error, retval = self._p4run(argv, **p4options)
@@ -2054,10 +2054,7 @@ class P4:
                 form = makeForm(**lbl)
 
                 # Build submission form file.
-                formfile = tempfile.mktemp()
-                fout = open(formfile, 'w')
-                fout.write(form)
-                fout.close()
+                formfile = _writeTemporaryForm(form)
                 argv = ['label', '-i', '<', formfile]
 
             output, error, retval = self._p4run(argv, **p4options)
@@ -2253,10 +2250,7 @@ class P4:
                 form = makeForm(**br)
 
                 # Build submission form file.
-                formfile = tempfile.mktemp()
-                fout = open(formfile, 'w')
-                fout.write(form)
-                fout.close()
+                formfile = _writeTemporaryForm(form)
                 argv = ['branch', '-i', '<', formfile]
 
             output, error, retval = self._p4run(argv, **p4options)
