@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout
+from test_utils import change_stdout, test_raw_option
 
 
 HAVE_OUTPUT = "depot-file#4 - client-file"
@@ -55,12 +55,5 @@ class HaveTestCase(unittest.TestCase):
         self.assertEqual(HAVE_OUTPUT, raw_result['stdout'])
 
     def test_with_options(self):
-        p4 = p4lib.P4()
-        p4.have(files="file.cpp",
-                user='other')
-
-        p4lib._run.assert_called_with(['p4',
-                                       '-u',
-                                       'other',
-                                       'have', 'file.cpp'])
-
+        test_raw_option(self, "have", files="file.cpp",
+                        expected=["have", "file.cpp"])

@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout
+from test_utils import change_stdout, test_raw_option
 
 
 SYNC_OUTPUT = r"""//depot/foo#1 - updating /depot/foo
@@ -86,12 +86,4 @@ class SyncTestCase(unittest.TestCase):
         self.assertEqual(SYNC_OUTPUT, raw_result['stdout'])
 
     def test_with_options(self):
-        change_stdout(SYNC_OUTPUT)
-
-        p4 = p4lib.P4()
-        p4.sync(user='other')
-
-        p4lib._run.assert_called_with(['p4',
-                                       '-u',
-                                       'other',
-                                       'sync'])
+        test_raw_option(self, "sync", expected=["sync"])

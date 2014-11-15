@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout
+from test_utils import change_stdout, test_raw_option
 
 
 WHERE_OUTPUT = r"""-//depot/foo/Py-2_1/... //trentm-ra/foo/Py-2_1/... c:\trentm\foo\Py-2_1\...
@@ -57,12 +57,5 @@ class WhereTestCase(unittest.TestCase):
         self.assertEqual(WHERE_OUTPUT, raw_result['stdout'])
 
     def test_with_options(self):
-        p4 = p4lib.P4()
-        p4.where(files="file.cpp",
-                 user='other')
-
-        p4lib._run.assert_called_with(['p4',
-                                       '-u',
-                                       'other',
-                                       'where', 'file.cpp'])
-
+        test_raw_option(self, "where", files='file.cpp',
+                        expected=["where", "file.cpp"])
