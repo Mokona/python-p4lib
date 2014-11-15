@@ -8,15 +8,19 @@ CHANGES_SHORT = \
     """Change 1234 on 2002/05/08 by mtrent@local *pending* 'a message'
 Change 4567 on 2002/05/09 by mokona@other 'another message'"""
 
+CL_1234_DESC_L1 = """This is a long description."""
+CL_1234_DESC_L2 = """With a lot of text."""
+CL_4567_DESC = "And another."
+
 CHANGES_LONG = \
     """Change 1234 on 2002/05/08 by mtrent@local
-\tThis is a long description.
+\t%s
 
-\tWith a lot of text.
+\t%s
 
 Change 4567 on 2002/05/09 by mokona@other
-\tAnd another.
-"""
+\t%s
+""" % (CL_1234_DESC_L1, CL_1234_DESC_L2, CL_4567_DESC)
 
 
 class ChangesTestCase(unittest.TestCase):
@@ -98,8 +102,25 @@ class ChangesTestCase(unittest.TestCase):
 
         p4 = p4lib.P4()
 
-        p4.changes(longOutput=True)
+        result = p4.changes(longOutput=True)
         p4lib._run.assert_called_with(['p4', 'changes', '-l'])
+
+        self.assertEqual(2, len(result))
+
+        first = result[0]
+        self.assertEqual("2002/05/08", first["date"])
+        self.assertEqual("local", first["client"])
+        self.assertEqual("mtrent", first["user"])
+        self.assertEqual(1234, first["change"])
+        self.assertEqual(CL_1234_DESC_L1 + "\n" +
+                         CL_1234_DESC_L2 + "\n", first["description"])
+
+        second = result[1]
+        self.assertEqual("2002/05/09", second["date"])
+        self.assertEqual("other", second["client"])
+        self.assertEqual("mokona", second["user"])
+        self.assertEqual(4567, second["change"])
+        self.assertEqual(CL_4567_DESC + "\n", second["description"])
 
     def test_raw_result(self):
         change_stdout(CHANGES_SHORT)
