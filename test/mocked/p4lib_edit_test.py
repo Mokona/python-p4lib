@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_raw_option
+from test_utils import change_stdout, test_options
 
 
 EDIT_OUTPUT_1 = r"//depot/test.cpp#3 - currently opened for edit"
@@ -106,5 +106,5 @@ class EditTestCase(unittest.TestCase):
         self.assertEqual(EDIT_OUTPUT_1, raw_result['stdout'])
 
     def test_with_options(self):
-        test_raw_option(self, "edit", files=EDIT_FILENAME,
+        test_options(self, "edit", files=EDIT_FILENAME,
                         expected=["edit", EDIT_FILENAME])

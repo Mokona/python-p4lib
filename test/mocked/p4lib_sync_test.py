@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_raw_option
+from test_utils import change_stdout, test_options
 
 
 SYNC_OUTPUT = r"""//depot/foo#1 - updating /depot/foo
@@ -86,4 +86,4 @@ class SyncTestCase(unittest.TestCase):
         self.assertEqual(SYNC_OUTPUT, raw_result['stdout'])
 
     def test_with_options(self):
-        test_raw_option(self, "sync", expected=["sync"])
+        test_options(self, "sync", expected=["sync"])

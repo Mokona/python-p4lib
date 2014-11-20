@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_raw_option
+from test_utils import change_stdout, test_options
 
 
 CHANGES_SHORT = \
@@ -135,4 +135,4 @@ class ChangesTestCase(unittest.TestCase):
         self.assertEqual(CHANGES_SHORT, raw_result['stdout'])
 
     def test_with_options(self):
-        test_raw_option(self, "changes", expected=["changes"])
+        test_options(self, "changes", expected=["changes"])

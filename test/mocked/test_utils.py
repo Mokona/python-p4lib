@@ -10,7 +10,7 @@ def change_stdout_list(list_for_stdout):
     p4lib._run.side_effect = [(stdout, "", "") for stdout in list_for_stdout]
 
 
-def test_raw_option(testobject, method, *args, **kwargs):
+def test_options(testobject, method, *args, **kwargs):
     p4 = p4lib.P4()
 
     method_kwargs = dict(kwargs)

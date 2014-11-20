@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_raw_option
+from test_utils import change_stdout, test_options
 
 
 PX_DEFAULT_CHANGE = "//depot/apps/px/px.py#3 - edit default change (text)"
@@ -95,7 +95,7 @@ class OpenedTestCase(unittest.TestCase):
 
     def test_opened_with_options(self):
         change_stdout(PX_DEFAULT_CHANGE)
-        test_raw_option(self, "opened", files='//depot/apps/px/px.py',
+        test_options(self, "opened", files='//depot/apps/px/px.py',
                         expected=["opened", "//depot/apps/px/px.py"])
 
 

@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, change_stdout_list, test_raw_option
+from test_utils import change_stdout, change_stdout_list, test_options
 
 
 TEMPORARY_FILENAME = "tempFile"
@@ -207,5 +207,5 @@ class ChangeTestCase(unittest.TestCase):
 
     def test_with_options(self):
         change_stdout(CHANGE_DELETED)
-        test_raw_option(self, "change", change=1234, delete=True,
+        test_options(self, "change", change=1234, delete=True,
                         expected=["change", "-d", "1234"])

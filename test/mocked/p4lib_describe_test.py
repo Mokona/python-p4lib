@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_raw_option
+from test_utils import change_stdout, test_options
 
 
 CHANGE_NUM = 1234
@@ -99,5 +99,5 @@ class DescribeTestCase(unittest.TestCase):
 
     def test_with_options(self):
         change_stdout(DESCRIBE_OUTPUT_LONG)
-        test_raw_option(self, "describe", change=CHANGE_NUM,
+        test_options(self, "describe", change=CHANGE_NUM,
                         expected=["describe", "1234"])
