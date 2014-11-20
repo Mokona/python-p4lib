@@ -208,4 +208,4 @@ class ChangeTestCase(unittest.TestCase):
     def test_with_options(self):
         change_stdout(CHANGE_DELETED)
         test_options(self, "change", change=1234, delete=True,
-                        expected=["change", "-d", "1234"])
+                     expected=["change", "-d", "1234"])

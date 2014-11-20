@@ -95,4 +95,4 @@ class AddTestCase(unittest.TestCase):
 
     def test_with_options(self):
         test_options(self, "add", files=ADD_FILENAME,
-                        expected=["add", ADD_FILENAME])
+                     expected=["add", ADD_FILENAME])

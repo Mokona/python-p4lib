@@ -58,4 +58,4 @@ class WhereTestCase(unittest.TestCase):
 
     def test_with_options(self):
         test_options(self, "where", files='file.cpp',
-                        expected=["where", "file.cpp"])
+                     expected=["where", "file.cpp"])

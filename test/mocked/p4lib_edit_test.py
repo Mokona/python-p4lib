@@ -107,4 +107,4 @@ class EditTestCase(unittest.TestCase):
 
     def test_with_options(self):
         test_options(self, "edit", files=EDIT_FILENAME,
-                        expected=["edit", EDIT_FILENAME])
+                     expected=["edit", EDIT_FILENAME])

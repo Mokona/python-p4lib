@@ -56,4 +56,4 @@ class HaveTestCase(unittest.TestCase):
 
     def test_with_options(self):
         test_options(self, "have", files="file.cpp",
-                        expected=["have", "file.cpp"])
+                     expected=["have", "file.cpp"])
