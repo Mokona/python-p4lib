@@ -1317,7 +1317,7 @@ class P4:
             (plain, default), 'n' (RCS), 'c' (context), 's' (summary),
             'u' (unified).
         "force" (-f) forces a diff of every file.
-        "satifying" (-s<flag>) limits the output to the names of files
+        "satisfying" (-s<flag>) limits the output to the names of files
             satisfying certain criteria:
                'a'     Opened files that are different than the revision
                        in the depot, or missing.
