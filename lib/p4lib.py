@@ -1329,7 +1329,7 @@ class P4:
         "text" (-t) forces diffs of non-text files.
 
         Returns a list of dicts representing each file diff'd. If
-        "satifying" is specified each dict will simply include a
+        "satisfying" is specified each dict will simply include a
         'localFile' key. Otherwise, each dict will include 'localFile',
         'depotFile', 'rev', and 'binary' (boolean) keys and possibly a
         'text' or a 'notes' key iff there are any differences. Generally
