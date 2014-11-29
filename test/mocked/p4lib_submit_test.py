@@ -67,8 +67,10 @@ class SubmitTestCase(unittest.TestCase):
                                        '-c', '1234'])
 
     def test_has_forbidden_parameter_combinations(self):
-        self.assertRaises(self.p4.submit, change=1234, description=DESCRIPTION)
-        self.assertRaises(self.p4.submit, change=1234, files=[])
+        self.assertRaises(p4lib.P4LibError, self.p4.submit, change=1234,
+                          description=DESCRIPTION)
+        self.assertRaises(p4lib.P4LibError, self.p4.submit, files=None,
+                          description=DESCRIPTION)
 
     def test_fills_results(self):
         result = self.p4.submit(change=1234)
