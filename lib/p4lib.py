@@ -1317,7 +1317,7 @@ class P4:
             (plain, default), 'n' (RCS), 'c' (context), 's' (summary),
             'u' (unified).
         "force" (-f) forces a diff of every file.
-        "satisfying" (-s<flag>) limits the output to the names of files
+        "satifying" (-s<flag>) limits the output to the names of files
             satisfying certain criteria:
                'a'     Opened files that are different than the revision
                        in the depot, or missing.
@@ -1329,7 +1329,7 @@ class P4:
         "text" (-t) forces diffs of non-text files.
 
         Returns a list of dicts representing each file diff'd. If
-        "satisfying" is specified each dict will simply include a
+        "satifying" is specified each dict will simply include a
         'localFile' key. Otherwise, each dict will include 'localFile',
         'depotFile', 'rev', and 'binary' (boolean) keys and possibly a
         'text' or a 'notes' key iff there are any differences. Generally
@@ -2067,9 +2067,9 @@ class P4:
             elif action in ('create/update', 'delete'):
                 lines = output.splitlines(1)
                 # Example output:
-                #   Client trentm-ra not changed. 
-                #   Client bertha-test deleted.
-                #   Client bertha-test saved.
+                #   Label label_1 not changed. 
+                #   Label label_2 deleted.
+                #   Label label_3 saved.
                 resultRe = re.compile("^Label (?P<label>[^\s@]+)"\
                     " (?P<action>not changed|deleted|saved)\.$")
                 match = resultRe.match(lines[0])
