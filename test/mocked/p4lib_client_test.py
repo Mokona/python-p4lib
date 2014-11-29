@@ -55,7 +55,7 @@ class ClientTestCase(unittest.TestCase):
                                        '<',
                                        TEMPORARY_FILENAME])
 
-    def test_can_update_a_new_client(self):
+    def test_can_update_a_client(self):
         """ The client is specified in the DICTIONARY. """
         change_stdout_list([CLIENT_GET_OUTPUT, CLIENT_UPDATE_OUTPUT])
 
@@ -65,7 +65,7 @@ class ClientTestCase(unittest.TestCase):
         expected = {'action': 'saved', 'client': 'bertha-test'}
         self.assertEqual(expected, result)
 
-    def test_can_update_a_new_client_2(self):
+    def test_can_update_a_client_2(self):
         """ The client is specified in the call. """
         change_stdout_list([CLIENT_GET_OUTPUT, CLIENT_UPDATE_OUTPUT])
 
