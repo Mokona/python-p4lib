@@ -19,16 +19,16 @@ Host: ra
 Owner: trentm
 """
 
-CLIENT_DICTIONNARY = {'access': '2002/07/16 00:05:31',
-                      'client': 'trentm-ra',
-                      'description': 'Created by trentm.',
-                      'host': 'ra',
-                      'lineend': 'local',
-                      'options': 'noallwrite noclobber',
-                      'owner': 'trentm',
-                      'root': 'c:\\trentm\\',
-                      'update': '2002/03/18 22:33:18',
-                      'view': '//depot/... //trentm-ra/...'}
+CLIENT_DICTIONARY = {'access': '2002/07/16 00:05:31',
+                     'client': 'trentm-ra',
+                     'description': 'Created by trentm.',
+                     'host': 'ra',
+                     'lineend': 'local',
+                     'options': 'noallwrite noclobber',
+                     'owner': 'trentm',
+                     'root': 'c:\\trentm\\',
+                     'update': '2002/03/18 22:33:18',
+                     'view': '//depot/... //trentm-ra/...'}
 
 CLIENT_NEW_DICT = {'description': 'Created by trentm.',
                    'host': 'ra',
@@ -56,10 +56,10 @@ class ClientTestCase(unittest.TestCase):
                                        TEMPORARY_FILENAME])
 
     def test_can_update_a_new_client(self):
-        """ The client is specified in the dictionnary. """
+        """ The client is specified in the DICTIONARY. """
         change_stdout_list([CLIENT_GET_OUTPUT, CLIENT_UPDATE_OUTPUT])
 
-        result = self.p4.client(client=CLIENT_DICTIONNARY)
+        result = self.p4.client(client=CLIENT_DICTIONARY)
         self.__assert_called_with_tempfile()
 
         expected = {'action': 'saved', 'client': 'bertha-test'}
@@ -69,7 +69,7 @@ class ClientTestCase(unittest.TestCase):
         """ The client is specified in the call. """
         change_stdout_list([CLIENT_GET_OUTPUT, CLIENT_UPDATE_OUTPUT])
 
-        result = self.p4.client(name='client-name', client=CLIENT_DICTIONNARY)
+        result = self.p4.client(name='client-name', client=CLIENT_DICTIONARY)
         self.__assert_called_with_tempfile()
 
         expected = {'action': 'saved', 'client': 'bertha-test'}
