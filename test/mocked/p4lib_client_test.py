@@ -1,7 +1,8 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options, change_stdout_list
+from test_utils import change_stdout, change_stdout_list
+from test_utils import test_raw_result, test_options
 
 
 TEMPORARY_FILENAME = "tempFile"
@@ -120,15 +121,7 @@ class ClientTestCase(unittest.TestCase):
         self.assertRaises(p4lib.P4LibError, self.p4.client, delete=True)
 
     def test_raw_result(self):
-        change_stdout(CLIENT_GET_OUTPUT)
-
-        raw_result = self.p4.client(name='client-name', _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(CLIENT_GET_OUTPUT, raw_result['stdout'])
+        test_raw_result(self, CLIENT_GET_OUTPUT, "client", name="client-name")
 
     def test_with_options(self):
         test_options(self, "client", name='client-name',

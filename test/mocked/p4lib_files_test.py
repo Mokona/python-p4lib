@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 FILES_OUTPUT = """//depot/file.txt#2 - edit change 1234 (text)
@@ -43,16 +43,7 @@ class FilesTestCase(unittest.TestCase):
         self.assertEqual("add", file_2["action"])
 
     def test_raw_result(self):
-        change_stdout(FILES_OUTPUT)
-
-        p4 = p4lib.P4()
-        raw_result = p4.files(files="//depot/...", _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(FILES_OUTPUT, raw_result['stdout'])
+        test_raw_result(self, FILES_OUTPUT, "files", files="//depot/...")
 
     def test_with_options(self):
         test_options(self, "files", files="//depot/...",

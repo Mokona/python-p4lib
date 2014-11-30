@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 SUBMIT_OUTPUT = """Change 1 created with 2 open file(s).
@@ -90,13 +90,7 @@ class SubmitTestCase(unittest.TestCase):
         self.assertEqual(expected_2, files[1])
 
     def test_raw_result(self):
-        raw_result = self.p4.submit(change=1234, _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(SUBMIT_OUTPUT, raw_result['stdout'])
+        test_raw_result(self, SUBMIT_OUTPUT, "submit", change=1234)
 
     def test_with_options(self):
         test_options(self, "submit", change=1234,

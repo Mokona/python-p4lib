@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 CHANGE_NUM = 1234
@@ -86,16 +86,7 @@ class DescribeTestCase(unittest.TestCase):
         self.assertIn("diff", result)
 
     def test_raw_result(self):
-        change_stdout(DESCRIBE_OUTPUT_LONG)
-
-        p4 = p4lib.P4()
-        raw_result = p4.describe(change=CHANGE_NUM, _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(DESCRIBE_OUTPUT_LONG, raw_result['stdout'])
+        test_raw_result(self, DESCRIBE_OUTPUT_LONG, "describe", change=CHANGE_NUM)
 
     def test_with_options(self):
         change_stdout(DESCRIBE_OUTPUT_LONG)

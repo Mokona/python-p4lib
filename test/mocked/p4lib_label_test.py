@@ -1,8 +1,8 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options, change_stdout_list
-
+from test_utils import change_stdout, change_stdout_list
+from test_utils import test_options, test_raw_result
 
 TEMPORARY_FILENAME = "tempFile"
 
@@ -113,15 +113,7 @@ class LabelTestCase(unittest.TestCase):
         self.assertRaises(p4lib.P4LibError, self.p4.label, delete=True)
 
     def test_raw_result(self):
-        change_stdout(LABEL_GET_OUTPUT)
-
-        raw_result = self.p4.label(name='label-name', _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(LABEL_GET_OUTPUT, raw_result['stdout'])
+        test_raw_result(self, LABEL_GET_OUTPUT, "label", name='label-name')
 
     def test_with_options(self):
         test_options(self, "label", name='label-name',

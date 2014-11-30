@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 RESOLVE_OUTPUT = """/mnt/file/foo.txt - merging //depot/foo.txt#2
@@ -90,13 +90,8 @@ class ResolveTestCase(unittest.TestCase):
         self.assertEqual(expected_2, result[1])
 
     def test_raw_result(self):
-        raw_result = self.p4.resolve(files="//depot/file.py", _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(RESOLVE_OUTPUT, raw_result['stdout'])
+        test_raw_result(self, RESOLVE_OUTPUT, "resolve",
+                        files="//depot/file.py")
 
     def test_with_options(self):
         test_options(self, "resolve", files="//depot/file.py",

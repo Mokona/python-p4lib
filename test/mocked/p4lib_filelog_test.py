@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 FILELOG_OUTPUT = """//depot/file.py
@@ -141,16 +141,7 @@ class FilelogTestCase(unittest.TestCase):
         self.assertEqual(['With some notes'], rev_1["notes"])
 
     def test_raw_result(self):
-        change_stdout(FILELOG_OUTPUT)
-
-        p4 = p4lib.P4()
-        raw_result = p4.filelog(files="//depot/...", _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(FILELOG_OUTPUT, raw_result['stdout'])
+        test_raw_result(self, FILELOG_OUTPUT, "filelog", files="//depot/...")
 
     def test_with_options(self):
         test_options(self, "filelog", files="//depot/...",

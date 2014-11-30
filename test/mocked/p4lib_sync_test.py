@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 SYNC_OUTPUT = r"""//depot/foo#1 - updating /depot/foo
@@ -40,14 +40,16 @@ class SyncTestCase(unittest.TestCase):
         third = result[2]
         self.assertEqual("//depot/foo", third["depotFile"])
         self.assertEqual(1, third["rev"])
-        self.assertEqual("is opened at a later revision - not changed", third["comment"])
+        self.assertEqual("is opened at a later revision - not changed",
+                         third["comment"])
         self.assertEqual([], third["notes"])
 
         fourth = result[3]
         self.assertEqual("//depot/foo", fourth["depotFile"])
         self.assertEqual(1, fourth["rev"])
         self.assertEqual("deleted as /depot/foo", fourth["comment"])
-        self.assertEqual(["must resolve #2 before submitting"], fourth["notes"])
+        self.assertEqual(["must resolve #2 before submitting"],
+                         fourth["notes"])
 
     def test_uses_file_list(self):
         change_stdout(SYNC_OUTPUT)
@@ -74,16 +76,7 @@ class SyncTestCase(unittest.TestCase):
         p4lib._run.assert_called_with(['p4', 'sync', '-n'])
 
     def test_raw_result(self):
-        change_stdout(SYNC_OUTPUT)
-
-        p4 = p4lib.P4()
-        raw_result = p4.sync(_raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(SYNC_OUTPUT, raw_result['stdout'])
+        test_raw_result(self, SYNC_OUTPUT, "sync")
 
     def test_with_options(self):
         test_options(self, "sync", expected=["sync"])

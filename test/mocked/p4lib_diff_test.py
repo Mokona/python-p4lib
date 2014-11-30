@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 DIFF_OUTPUT = """==== //depot/file.py#12 - /home/mokona/file.py ====
@@ -100,16 +100,7 @@ class DiffTestCase(unittest.TestCase):
         self.assertEqual(expected, result[0])
 
     def test_raw_result(self):
-        change_stdout(DIFF_OUTPUT)
-
-        p4 = p4lib.P4()
-        raw_result = p4.diff(files="//depot/file.py", _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(DIFF_OUTPUT, raw_result['stdout'])
+        test_raw_result(self, DIFF_OUTPUT, "diff", files="//depot/file.py")
 
     def test_with_options(self):
         test_options(self, "diff", files="//depot/file.py",

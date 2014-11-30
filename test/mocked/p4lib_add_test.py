@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 ADD_OUTPUT_1 = r"//depot/file.cpp#1 - opened for add"
@@ -82,16 +82,8 @@ class AddTestCase(unittest.TestCase):
                                        '-c', '1234', ADD_FILENAME])
 
     def test_raw_result(self):
-        change_stdout(ADD_OUTPUT_1)
-
-        p4 = p4lib.P4()
-        raw_result = p4.edit(files=ADD_FILENAME, _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(ADD_OUTPUT_1, raw_result['stdout'])
+        test_raw_result(self, ADD_OUTPUT_1, "add",
+                        files=ADD_FILENAME)
 
     def test_with_options(self):
         test_options(self, "add", files=ADD_FILENAME,

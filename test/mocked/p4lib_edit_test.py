@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 EDIT_OUTPUT_1 = r"//depot/test.cpp#3 - currently opened for edit"
@@ -17,6 +17,7 @@ EDIT_OUTPUT_2 = r"""//depot/build.py#142 - opened for edit
 
 EDIT_FILENAME = "//depot/test.cpp"
 EDIT_FILENAMES = ["//depot/build.py", "//depot/test.cpp"]
+
 
 class EditTestCase(unittest.TestCase):
     def setUp(self):
@@ -94,16 +95,7 @@ class EditTestCase(unittest.TestCase):
                                        '-c', '1234', EDIT_FILENAME])
 
     def test_raw_result(self):
-        change_stdout(EDIT_OUTPUT_1)
-
-        p4 = p4lib.P4()
-        raw_result = p4.edit(files=EDIT_FILENAME, _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(EDIT_OUTPUT_1, raw_result['stdout'])
+        test_raw_result(self, EDIT_OUTPUT_1, "edit", files=EDIT_FILENAME)
 
     def test_with_options(self):
         test_options(self, "edit", files=EDIT_FILENAME,

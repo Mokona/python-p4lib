@@ -1,7 +1,8 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, change_stdout_list, test_options
+from test_utils import change_stdout, change_stdout_list
+from test_utils import test_options, test_raw_result
 
 
 TEMPORARY_FILENAME = "tempFile"
@@ -194,16 +195,8 @@ class ChangeTestCase(unittest.TestCase):
                           descritpion="")
 
     def test_raw_result(self):
-        change_stdout(CHANGE_DELETED)
-
-        p4 = p4lib.P4()
-        raw_result = p4.change(change=1234, delete=True, _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(CHANGE_DELETED, raw_result['stdout'])
+        test_raw_result(self, CHANGE_DELETED, "change",
+                        change=1234, delete=True)
 
     def test_with_options(self):
         change_stdout(CHANGE_DELETED)

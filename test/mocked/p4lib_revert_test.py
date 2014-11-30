@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, test_options
+from test_utils import change_stdout, test_options, test_raw_result
 
 
 REVERT_OUTPUT = """//depot/hello.txt#1 - was edit, reverted
@@ -69,16 +69,8 @@ class RevertTestCase(unittest.TestCase):
         self.assertEqual(expected_2, result[1])
 
     def test_raw_result(self):
-        change_stdout(REVERT_OUTPUT)
-
-        p4 = p4lib.P4()
-        raw_result = p4.diff(files="//depot/file.py", _raw=True)
-
-        self.assertIn('stdout', raw_result)
-        self.assertIn('stderr', raw_result)
-        self.assertIn('retval', raw_result)
-
-        self.assertEqual(REVERT_OUTPUT, raw_result['stdout'])
+        test_raw_result(self, REVERT_OUTPUT, "revert",
+                        files="//depot/file.py")
 
     def test_with_options(self):
         test_options(self, "revert", files="//depot/file.py",
