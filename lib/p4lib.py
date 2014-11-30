@@ -2262,9 +2262,9 @@ class P4:
             elif action in ('create/update', 'delete'):
                 lines = output.splitlines(1)
                 # Example output:
-                #   Client trentm-ra not changed. 
-                #   Client bertha-test deleted.
-                #   Client bertha-test saved.
+                #   Branch trentm-ra not changed. 
+                #   Branch bertha-test deleted.
+                #   Branch bertha-test saved.
                 resultRe = re.compile("^Branch (?P<branch>[^\s@]+)"\
                     " (?P<action>not changed|deleted|saved)\.$")
                 match = resultRe.match(lines[0])
