@@ -5,6 +5,11 @@ Mature; has been heavily used in a commercial product for
 over 3 years. Limited in the coverage of the Perforce Client
 API. 
 
+This particular fork is a work in progress while refactoring to
+be compatible with Python 3.4. The above comment applies
+to commit fd7ba11f59fa01153e52a7b1813526a07819814a from
+2010 06 07.
+
 
 px status
 ---------
