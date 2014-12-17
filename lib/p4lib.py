@@ -69,7 +69,7 @@ class _Logger:
             self.threshold = self.WARN
         else:
             self.threshold = threshold
-        if type(streamOrFileName) == types.StringType:
+        if isinstance(streamOrFileName, str):
             self.stream = open(streamOrFileName, 'w')
             self._opennedStream = 1
         else:
@@ -154,7 +154,7 @@ def _run(argv):
     results.  Returns (<stdout lines>, <stderr lines>, <return value>).
     Note: 'argv' may also just be the command string.
     """
-    if type(argv) in (types.ListType, types.TupleType):
+    if isinstance(argv, list) or isinstance(argv, tuple):
         cmd = _joinArgv(argv)
     else:
         cmd = argv
@@ -243,7 +243,7 @@ def makeForm(**kwargs):
         if key == 'files':
             strval = ''
             for f in value:
-                if f.has_key('action'):
+                if 'action' in f:
                     strval += '%(depotFile)s\t# %(action)s\n' % f
                 else:
                     strval += '%(depotFile)s\n' % f
@@ -295,7 +295,7 @@ def parseForm(content):
         - A "Change" value will be converted to an int if
           appropriate.
     """
-    if type(content) in types.StringTypes:
+    if isinstance(content, str):
         lines = content.splitlines(1)
     else:
         lines = content
@@ -524,7 +524,7 @@ class P4:
             optv += ['-a']
         if change:
             optv += ['-c', str(change)]
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
 
         argv = ['opened'] + optv
@@ -599,8 +599,8 @@ class P4:
         #  //depot/foo/Py Exts.dsw //trentm-ra/foo/Py Exts.dsw c:\trentm\foo\Py Exts.dsw
         #  //depot/foo/%1 //trentm-ra/foo/%1 c:\trentm\foo\%1
         # The last one is surprising. It comes from using '*' in the
-        # client spec. 
-        if type(files) in types.StringTypes:
+        # client spec.
+        if isinstance(files, str):
             files = [files]
 
         argv = ['where']
@@ -652,7 +652,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
 
         argv = ['have']
@@ -774,7 +774,7 @@ class P4:
         #    allowed: presumed to be forms?
         formfile = None
         try:
-            if type(files) in types.StringTypes:
+            if isinstance(files, str):
                 files = [files]
 
             action = None  # note action to know how to parse output below
@@ -890,13 +890,13 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if max is not None and type(max) != types.IntType:
+        if max is not None and not isinstance(max, int):
             raise P4LibError("Incorrect 'max' value. It must be an integer: "
                              "'%s' (type '%s')" % (max, type(max)))
         if status is not None and status not in ("pending", "submitted"):
             raise P4LibError("Incorrect 'status' value: '%s'" % status)
 
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
 
         optv = []
@@ -965,7 +965,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         optv = []
         if force:
@@ -1039,7 +1039,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         optv = []
         if change:
@@ -1110,7 +1110,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         optv = []
         if change:
@@ -1166,7 +1166,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
@@ -1208,12 +1208,12 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if maxRevs is not None and type(maxRevs) != types.IntType:
+        if maxRevs is not None and not isinstance(maxRevs, int):
             raise P4LibError("Incorrect 'maxRevs' value. It must be an "
                              "integer: '%s' (type '%s')"
                              % (maxRevs, type(maxRevs)))
 
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
@@ -1276,7 +1276,7 @@ class P4:
         The 'text' key will not be present if the file is binary. If
         both 'quiet' and 'localFile', there will be no hits at all.
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
@@ -1319,7 +1319,7 @@ class P4:
                         hit = {'text': node['data']}
                         hits.append(hit)
                     else:
-                        if not hits[-1].has_key('text')\
+                        if 'text' not in hits[-1] \
                            or hits[-1]['text'] is None:
                             hits[-1]['text'] = node['data']
                         else:
@@ -1361,7 +1361,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         if diffFormat not in ('', 'n', 'c', 's', 'u'):
             raise P4LibError("Incorrect diff format flag: '%s'" % diffFormat)
@@ -1392,7 +1392,7 @@ class P4:
         return hits
 
     def _parseDiffOutput(self, output):
-        if type(output) in types.StringTypes:
+        if isinstance(output, str):
             outputLines = output.splitlines(1)
         else:
             outputLines = output
@@ -1434,11 +1434,11 @@ class P4:
                 hits.append(hit)
             elif header4:
                 hits[-1].update(header4.groupdict())
-            elif not hits[-1].has_key('text') and line == LINE_DIFFER_TEXT:
+            elif 'text' not in hits[-1] and line == LINE_DIFFER_TEXT:
                 hits[-1]['notes'] = [line]
             else:
                 # This is a diff line.
-                if not hits[-1].has_key('text'):
+                if 'text' not in hits[-1]:
                     hits[-1]['text'] = ''
                     # XXX 'p4 describe' diff text includes a single
                     #     blank line after each header line before the
@@ -1500,7 +1500,7 @@ class P4:
                 node = marshal.load(o)
                 if node['code'] == 'info'\
                    and node['data'] == '(... files differ ...)':
-                    if diff.has_key('notes'):
+                    if 'notes' not in diff:
                         diff['notes'].append(node['data'])
                     else:
                         diff['notes'] = [node['data']]
@@ -1511,7 +1511,7 @@ class P4:
                     d['rev2'] = int(d['rev2'])
                     diff.update(match.groupdict())
                 elif node['code'] == 'text':
-                    if not diff.has_key('text') or diff['text'] is None:
+                    if 'text' not in diff or diff['text'] is None:
                         diff['text'] = node['data']
                     else:
                         diff['text'] += node['data']
@@ -1538,7 +1538,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         optv = []
         if change:
@@ -1558,7 +1558,7 @@ class P4:
         #   //depot/test_g.txt#none - was add, abandoned
         hits = []
         hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\w+))? - '
-                            '(?P<comment>.*)$')
+                           '(?P<comment>.*)$')
         for line in output.splitlines(1):
             match = hitRe.match(line)
             if match:
@@ -1611,7 +1611,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         optv = []
         if autoMode is None:
@@ -1748,7 +1748,7 @@ class P4:
         #   - Structure this code more like change, client, label, & branch.
         formfile = None
         try:
-            if type(files) in types.StringTypes:
+            if isinstance(files, str):
                 files = [files]
             if change and not files and not description:
                 argv = ['submit', '-c', str(change)]
@@ -1855,7 +1855,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         optv = []
         if change:
@@ -1940,7 +1940,7 @@ class P4:
                 argv = ['client', '-o', name]
             else:
                 action = "create/update"
-                if client.has_key("client"):
+                if 'client' in client:
                     name = client["client"]
                 if name is not None:
                     cl = self.client(name=name)
@@ -1966,7 +1966,7 @@ class P4:
                 #   Client bertha-test deleted.
                 #   Client bertha-test saved.
                 resultRe = re.compile("^Client (?P<client>[^\s@]+)"
-                    " (?P<action>not changed|deleted|saved)\.$")
+                                      " (?P<action>not changed|deleted|saved)\.$")
                 match = resultRe.match(lines[0])
                 if match:
                     rv = match.groupdict()
@@ -2071,7 +2071,7 @@ class P4:
                 argv = ['label', '-o', name]
             else:
                 action = "create/update"
-                if label.has_key("label"):
+                if 'label' in label:
                     name = label["label"]
                 if name is not None:
                     lbl = self.label(name=name)
@@ -2173,7 +2173,7 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         optv = []
         if force:
@@ -2266,7 +2266,7 @@ class P4:
                 argv = ['branch', '-o', name]
             else:
                 action = "create/update"
-                if branch.has_key("branch"):
+                if 'branch' in branch:
                     name = branch["branch"]
                 if name is not None:
                     br = self.branch(name=name)
@@ -2396,7 +2396,7 @@ class P4:
                      'ourLock': 0,
                      }
 
-        if type(files) in types.StringTypes:
+        if isinstance(files, str):
             files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
