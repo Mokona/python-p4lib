@@ -1,7 +1,7 @@
 import unittest
 import p4lib
 from mock import Mock
-from test_utils import change_stdout, change_stdout_list
+from test_utils import change_stdout
 from test_utils import test_options, test_raw_result
 
 
@@ -94,8 +94,20 @@ class FStatTestCase(unittest.TestCase):
         self.assertEqual(expected2, result[1])
 
     def test_raw_result(self):
-        test_raw_result(self, FSTAT_OUTPUT, "fstat", files="/depot/test.txt")
+        p4 = p4lib.P4()
+
+        change_stdout(FSTAT_OUTPUT)
+
+        raw_result = p4.fstat(files="/depot/test.txt", _raw=True)[1]
+
+        self.assertIn('stdout', raw_result)
+        self.assertIn('stderr', raw_result)
+        self.assertIn('retval', raw_result)
+
+        self.assertEqual(FSTAT_OUTPUT, raw_result['stdout'])
+        self.assertEqual("", raw_result['stderr'])
+        self.assertEqual(0, raw_result['retval'])
 
     def test_with_options(self):
         test_options(self, "fstat", files="/depot/test.txt",
-                     expected=["fstat", "/depot/test.txt"])
+                     expected=["fstat", "-C", "-P", "/depot/test.txt"])
