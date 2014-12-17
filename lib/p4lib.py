@@ -38,13 +38,12 @@
 #     branches in one group; client, change, branch, label in another.
 #     Should share implementation between these all.
 
-__version_info__ = (0, 9, 5)
+__version_info__ = (0, 9, 6, 'beta')
 __version__ = '.'.join(map(str, __version_info__))
 
 import os
 import sys
 import pprint
-import cmd
 import re
 import types
 import marshal
@@ -52,19 +51,19 @@ import getopt
 import tempfile
 import copy
 
-
-
 #---- exceptions
+
 
 class P4LibError(Exception):
     pass
 
 
-
 #---- internal logging facility
+
 
 class _Logger:
     DEBUG, INFO, WARN, ERROR, CRITICAL = range(5)
+
     def __init__(self, threshold=None, streamOrFileName=sys.stderr):
         if threshold is None:
             self.threshold = self.WARN
@@ -76,9 +75,11 @@ class _Logger:
         else:
             self.stream = streamOrFileName
             self._opennedStream = 0
+
     def __del__(self):
         if self._opennedStream:
             self.stream.close()
+
     def _getLevelName(self, level):
         levelNameMap = {
             self.DEBUG: "DEBUG",
@@ -88,6 +89,7 @@ class _Logger:
             self.CRITICAL: "CRITICAL",
         }
         return levelNameMap[level]
+
     def log(self, level, msg, *args):
         if level < self.threshold:
             return
@@ -95,14 +97,19 @@ class _Logger:
         message = message + (msg % args) + "\n"
         self.stream.write(message)
         self.stream.flush()
+
     def debug(self, msg, *args):
         self.log(self.DEBUG, msg, *args)
+
     def info(self, msg, *args):
         self.log(self.INFO, msg, *args)
+
     def warn(self, msg, *args):
         self.log(self.WARN, msg, *args)
+
     def error(self, msg, *args):
         self.log(self.ERROR, msg, *args)
+
     def fatal(self, msg, *args):
         self.log(self.CRITICAL, msg, *args)
 
@@ -137,7 +144,8 @@ def _joinArgv(argv):
         else:
             cmdstr += _escapeArg(arg)
         cmdstr += ' '
-    if cmdstr.endswith(' '): cmdstr = cmdstr[:-1]  # strip trailing space
+    if cmdstr.endswith(' '):
+        cmdstr = cmdstr[:-1]  # strip trailing space
     return cmdstr
 
 
@@ -171,10 +179,10 @@ def _run(argv):
         if os.WIFEXITED(rv):
             retval = os.WEXITSTATUS(rv)
         else:
-            raise P4LibError("Error running '%s', it did not exit "\
+            raise P4LibError("Error running '%s', it did not exit "
                              "properly: rv=%d" % (cmd, rv))
     if retval:
-        raise P4LibError("Error running '%s': error='%s' retval='%s'"\
+        raise P4LibError("Error running '%s': error='%s' retval='%s'"
                          % (cmd, error, retval))
     log.debug("output='%s'", output)
     log.debug("error='%s'", error)
@@ -231,7 +239,7 @@ def makeForm(**kwargs):
     As well, the 'change' value may be an int.
     """
     # Do special preprocessing on the data.
-    for key, value in kwargs.items():   
+    for key, value in kwargs.items():
         if key == 'files':
             strval = ''
             for f in value:
@@ -247,7 +255,8 @@ def makeForm(**kwargs):
     form = ''
     specials = ['differences']
     keys = kwargs.keys()
-    keys.sort(lambda a,b,s=specials: _specialsLast(a,b,s))
+    keys.sort(lambda a, b, s=specials: _specialsLast(a, b, s))
+
     for key in keys:
         value = kwargs[key]
         if value is None:
@@ -259,8 +268,7 @@ def makeForm(**kwargs):
         # whilst the perforce server handles a commit without the newline sep,
         # most perforce triggers will reject this style of form description.
         # http://bugs.activestate.com/show_bug.cgi?id=73103
-        elif len(value.split('\n')) > 1 or \
-              key == "description":
+        elif len(value.split('\n')) > 1 or key == "description":
             form += '%s:\n' % key.capitalize()
             if key in specials:
                 form += '\n'
@@ -273,6 +281,7 @@ def makeForm(**kwargs):
             form += '%s:\t%s\n' % (key.capitalize(), value)
         form += '\n'
     return form
+
 
 def parseForm(content):
     """Parse an arbitrary Perforce form and return a dict result.
@@ -325,8 +334,9 @@ def parseForm(content):
                 while spec[currkey].endswith('\n'):
                     spec[currkey] = spec[currkey][:-1]
                 currkey = None
-        if not currkey: # i.e. not accumulating a multi-line block
-            if not line.strip(): continue   # skip empty lines
+        if not currkey:  # i.e. not accumulating a multi-line block
+            if not line.strip():
+                continue  # skip empty lines
             key, remainder = line.split(':', 1)
             if not remainder.strip():   # this is a multi-line block
                 currkey = key.lower()
@@ -348,10 +358,11 @@ def parseForm(content):
                 pass
         elif key == "files":
             spec[key] = []
-            fileRe = re.compile('^(?P<depotFile>//.+?)\t'\
+            fileRe = re.compile('^(?P<depotFile>//.+?)\t'
                                 '# (?P<action>\w+)$')
             for line in value.split('\n'):
-                if not line.strip(): continue
+                if not line.strip():
+                    continue
                 match = fileRe.match(line)
                 try:
                     spec[key].append(match.groupdict())
@@ -398,6 +409,7 @@ def makeOptv(**options):
         optv.append(val)
     return optv
 
+
 def parseOptv(optv):
     """Return an option dictionary representing the given p4 option vector.
     
@@ -405,7 +417,7 @@ def parseOptv(optv):
 
     The returned option dictionary is suitable passing to the P4 constructor.
 
-    Example:    
+    Example:
         >>> parseP4Optv(['-c', 'swatter', '-d', 'D:\\trentm'])
         {'client': 'swatter',
          'dir': 'D:\\trentm'}
@@ -419,7 +431,7 @@ def parseOptv(optv):
     optd = {}
     for opt, optarg in optlist:
         if opt in ('-h', '-V', '-x'):
-            raise P4LibError("The '%s' p4 option is not appropriate "\
+            raise P4LibError("The '%s' p4 option is not appropriate "
                              "for p4lib.P4." % opt)
         elif opt in ('-G', '-s'):
             log.info("Ignoring '%s' option." % opt)
@@ -506,10 +518,12 @@ class P4:
         # - with '-a':
         #   //depot/foo.txt#1 - edit change 12345 (text+w) by trentm@trentm-pliers
         # - none opened:
-        #   foo.txt - file(s) not opened on this client. 
+        #   foo.txt - file(s) not opened on this client.
         optv = []
-        if allClients: optv += ['-a']
-        if change: optv += ['-c', str(change)]
+        if allClients:
+            optv += ['-a']
+        if change:
+            optv += ['-c', str(change)]
         if type(files) in types.StringTypes:
             files = [files]
 
@@ -521,11 +535,13 @@ class P4:
             #         files.
             SET_SIZE = 10
             for i in range(0, len(files), SET_SIZE):
-                set_argv = argv[:] + files[i:i+SET_SIZE]
+                set_argv = argv[:] + files[i:i + SET_SIZE]
                 stdout, stderr, retval = self._p4run(set_argv, **p4options)
                 results["stdout"] += stdout
                 results["stderr"] += stderr
-                results["retval"] += retval or 0 #XXX just add up retvals for now?!
+
+                #XXX just add up retvals for now?!
+                results["retval"] += retval or 0
         else:
             stdout, stderr, retval = self._p4run(argv, **p4options)
             results["stdout"] = stdout
@@ -547,8 +563,8 @@ class P4:
         for line in results["stdout"].splitlines(1):
             match = lineRe.search(line)
             if not match:
-                raise P4LibError("Internal error: 'p4 opened' regex did not "\
-                                 "match '%s'. Please report this to the "\
+                raise P4LibError("Internal error: 'p4 opened' regex did not "
+                                 "match '%s'. Please report this to the "
                                  "author." % line)
             file = match.groupdict()
             file['rev'] = int(file['rev'])
@@ -597,24 +613,25 @@ class P4:
         results = []
         for line in output.splitlines(1):
             file = {}
-            if line[-1] == '\n': line = line[:-1]
+            if line[-1] == '\n':
+                line = line[:-1]
             if line.startswith('-'):
                 file['minus'] = 1
                 line = line[1:]
             else:
                 file['minus'] = 0
             depotFileStart = line.find('//')
-            clientFileStart = line.find('//', depotFileStart+2)
-            file['depotFile'] = line[depotFileStart:clientFileStart-1]
+            clientFileStart = line.find('//', depotFileStart + 2)
+            file['depotFile'] = line[depotFileStart:clientFileStart - 1]
             if sys.platform.startswith('win'):
                 assert ':' not in file['depotFile'],\
                        "Current parsing cannot handle this line '%s'." % line
-                localFileStart = line.find(':', clientFileStart+2) - 1
+                localFileStart = line.find(':', clientFileStart + 2) - 1
             else:
                 assert file['depotFile'].find(' /') == -1,\
-                       "Current parsing cannot handle this line '%s'." % line
-                localFileStart = line.find(' /', clientFileStart+2) + 1
-            file['clientFile'] = line[clientFileStart:localFileStart-1]
+                    "Current parsing cannot handle this line '%s'." % line
+                localFileStart = line.find(' /', clientFileStart + 2) + 1
+            file['clientFile'] = line[clientFileStart:localFileStart - 1]
             file['localFile'] = line[localFileStart:]
             results.append(file)
         return results
@@ -649,7 +666,8 @@ class P4:
         hits = []
         haveRe = re.compile('(.+)#(\d+) - (.+)')
         for line in output.splitlines(1):
-            if line[-1] == '\n': line = line[:-1]
+            if line[-1] == '\n':
+                line = line[:-1]
             match = haveRe.match(line)
             if match:
                 hit = {}
@@ -693,27 +711,27 @@ class P4:
 
         desc = {}
         lines = output.splitlines(1)
-        changeRe = re.compile('^Change (?P<change>\d+) by (?P<user>[^\s@]+)@'\
+        changeRe = re.compile('^Change (?P<change>\d+) by (?P<user>[^\s@]+)@'
                               '(?P<client>[^\s@]+) on (?P<date>[\d/ :]+)$')
         desc = changeRe.match(lines[0]).groupdict()
         desc['change'] = int(desc['change'])
         filesIdx = lines.index("Affected files ...\n")
         desc['description'] = ""
-        for line in lines[2:filesIdx-1]:
-            desc['description'] += line[1:].strip() # drop the leading \t
+        for line in lines[2:filesIdx - 1]:
+            desc['description'] += line[1:].strip()  # drop the leading \t
         if shortForm:
             diffsIdx = len(lines)
         else:
             diffsIdx = lines.index("Differences ...\n")
         desc['files'] = []
-        fileRe = re.compile('^... (?P<depotFile>.+?)#(?P<rev>\d+) '\
+        fileRe = re.compile('^... (?P<depotFile>.+?)#(?P<rev>\d+) '
                             '(?P<action>\w+)$')
-        for line in lines[filesIdx+2:diffsIdx-1]:
+        for line in lines[filesIdx + 2:diffsIdx - 1]:
             file = fileRe.match(line).groupdict()
             file['rev'] = int(file['rev'])
             desc['files'].append(file)
         if not shortForm:
-            desc['diff'] = self._parseDiffOutput(lines[diffsIdx+2:])
+            desc['diff'] = self._parseDiffOutput(lines[diffsIdx + 2:])
         return desc
 
     def change(self, files=None, description=None, change=None, delete=0,
@@ -759,7 +777,7 @@ class P4:
             if type(files) in types.StringTypes:
                 files = [files]
 
-            action = None # note action to know how to parse output below
+            action = None  # note action to know how to parse output below
             if change and files is None and not description:
                 if delete:
                     # Delete a pending change list.
@@ -771,19 +789,19 @@ class P4:
                     argv = ['change', '-o', str(change)]
             else:
                 if delete:
-                    raise P4LibError("Cannot specify 'delete' with either "\
+                    raise P4LibError("Cannot specify 'delete' with either "
                                      "'files' or 'description'.")
                 if change:
                     # Edit a current pending changelist.
                     action = 'update'
                     ch = self.change(change=change)
-                    if files is None: # 'files' was not specified.
+                    if files is None:  # 'files' was not specified.
                         pass
-                    elif files == []: # Explicitly specified no files.
+                    elif files == []:  # Explicitly specified no files.
                         # Explicitly specified no files.
                         ch['files'] = []
                     else:
-                        depotfiles = [{'depotFile': f['depotFile']}\
+                        depotfiles = [{'depotFile': f['depotFile']}
                                       for f in self.where(files)]
                         ch['files'] = depotfiles
                     if description:
@@ -795,15 +813,15 @@ class P4:
                     # Empty 'files' should default to all opened files in the
                     # 'default' changelist.
                     if files is None:
-                        files = [{'depotFile': f['depotFile']}\
+                        files = [{'depotFile': f['depotFile']}
                                  for f in self.opened()]
-                    elif files == []: # Explicitly specified no files.
+                    elif files == []:  # Explicitly specified no files.
                         pass
                     else:
                         #TODO: Add test to expect P4LibError if try to use
                         #      p4 wildcards in files. Currently *do* get
                         #      correct behaviour.
-                        files = [{'depotFile': f['depotFile']}\
+                        files = [{'depotFile': f['depotFile']}
                                  for f in self.where(files)]
                     form = makeForm(files=files, description=description,
                                     change='new')
@@ -822,13 +840,14 @@ class P4:
             elif action in ('create', 'update', 'delete'):
                 lines = output.splitlines(1)
                 resultRes = [
-                    re.compile("^Change (?P<change>\d+)"\
+                    re.compile("^Change (?P<change>\d+)"
                                " (?P<action>created|updated|deleted)\.$"),
-                    re.compile("^Change (?P<change>\d+) (?P<action>created)"\
+                    re.compile("^Change (?P<change>\d+) (?P<action>created)"
                                " (?P<comment>.+?)\.$"),
-                    re.compile("^Change (?P<change>\d+) (?P<action>updated)"\
+                    re.compile("^Change (?P<change>\d+) (?P<action>updated)"
                                ", (?P<comment>.+?)\.$"),
-                    # e.g., Change 1 has 1 open file(s) associated with it and can't be deleted.
+                    # e.g., Change 1 has 1 open file(s) associated with it and
+                    # can't be deleted.
                     re.compile("^Change (?P<change>\d+) (?P<comment>.+?)\.$"),
                     ]
                 for resultRe in resultRes:
@@ -842,7 +861,7 @@ class P4:
                           "output: '%s'" % (action, output)
                     raise P4LibError(err)
             else:
-                raise P4LibError("Internal error: unexpected action: '%s'"\
+                raise P4LibError("Internal error: unexpected action: '%s'"
                                  % action)
 
             return change
@@ -872,7 +891,7 @@ class P4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
         if max is not None and type(max) != types.IntType:
-            raise P4LibError("Incorrect 'max' value. It must be an integer: "\
+            raise P4LibError("Incorrect 'max' value. It must be an integer: "
                              "'%s' (type '%s')" % (max, type(max)))
         if status is not None and status not in ("pending", "submitted"):
             raise P4LibError("Incorrect 'status' value: '%s'" % status)
@@ -898,11 +917,12 @@ class P4:
 
         changes = []
         if longOutput:
-            changeRe = re.compile("^Change (?P<change>\d+) on "\
-                                  "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"\
+            changeRe = re.compile("^Change (?P<change>\d+) on "
+                                  "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
                                   "(?P<client>[^\s@]+)$")
             for line in output.splitlines(1):
-                if not line.strip(): continue  # skip blank lines
+                if not line.strip():
+                    continue  # skip blank lines
                 if line.startswith('\t'):
                     # Append this line (minus leading tab) to last
                     # change's description.
@@ -913,9 +933,9 @@ class P4:
                     change['description'] = ''
                     changes.append(change)
         else:
-            changeRe = re.compile("^Change (?P<change>\d+) on "\
-                                  "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"\
-                                  "(?P<client>[^\s@]+) (\*pending\* )?"\
+            changeRe = re.compile("^Change (?P<change>\d+) on "
+                                  "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
+                                  "(?P<client>[^\s@]+) (\*pending\* )?"
                                   "'(?P<description>.*?)'$")
             for line in output.splitlines(1):
                 match = changeRe.match(line)
@@ -924,7 +944,7 @@ class P4:
                     change['change'] = int(change['change'])
                     changes.append(change)
                 else:
-                    raise P4LibError("Internal error: could not parse "\
+                    raise P4LibError("Internal error: could not parse "
                                      "'p4 changes' output line: '%s'" % line)
         return changes
 
@@ -961,11 +981,13 @@ class P4:
             #         files.
             SET_SIZE = 10
             for i in range(0, len(files), SET_SIZE):
-                set_argv = argv[:] + files[i:i+SET_SIZE]
+                set_argv = argv[:] + files[i:i + SET_SIZE]
                 stdout, stderr, retval = self._p4run(set_argv, **p4options)
                 results["stdout"] += stdout
                 results["stderr"] += stderr
-                results["retval"] += retval or 0#XXX just add up retvals for now?!
+
+                #XXX just add up retvals for now?!
+                results["retval"] += retval or 0
         else:
             stdout, stderr, retval = self._p4run(argv, **p4options)
             results["stdout"] = stdout
@@ -983,7 +1005,7 @@ class P4:
         #    ... //depot/foo - must resolve #2 before submitting
         # There are probably others forms.
         hits = []
-        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '\
+        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
                             '(?P<comment>.+?)$')
         for line in results["stdout"].splitlines(1):
             if line.startswith('... '):
@@ -997,7 +1019,7 @@ class P4:
                 hit['notes'] = []
                 hits.append(hit)
                 continue
-            raise P4LibError("Internal error: could not parse 'p4 sync'"\
+            raise P4LibError("Internal error: could not parse 'p4 sync'"
                              "output line: '%s'" % line)
         return hits
 
@@ -1047,13 +1069,13 @@ class P4:
         #      "comment": "can't change from change 24940 - use 'reopen'",
         #      "notes": []}]
         hits = []
-        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '\
+        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
                             '(?P<comment>.*)$')
-        line2Re = re.compile('^(?P<depotFile>.+?) - '\
-                            '(?P<comment>.*)$')
+        line2Re = re.compile('^(?P<depotFile>.+?) - '
+                             '(?P<comment>.*)$')
         for line in output.splitlines(1):
             line = line.rstrip()
-            if line.startswith("..."): # this is a note for the latest hit
+            if line.startswith("..."):  # this is a note for the latest hit
                 note = line.split(' - ')[-1].strip()
                 hits[-1]['notes'].append(note)
             else:
@@ -1113,8 +1135,8 @@ class P4:
         #   //depot/apps/px/t#1 - opened for add
         #
         hits = []
-        hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\d+))? - '\
-                            '(?P<comment>.*)$')
+        hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\d+))? - '
+                           '(?P<comment>.*)$')
         for line in output.splitlines(1):
             match = hitRe.match(line)
             if match:
@@ -1155,8 +1177,8 @@ class P4:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
         hits = []
-        fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "\
-                            "(?P<action>\w+) change (?P<change>\d+) "\
+        fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "
+                            "(?P<action>\w+) change (?P<change>\d+) "
                             "\((?P<type>[\w+]+)\)$")
         for line in output.splitlines(1):
             match = fileRe.match(line)
@@ -1187,8 +1209,8 @@ class P4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
         if maxRevs is not None and type(maxRevs) != types.IntType:
-            raise P4LibError("Incorrect 'maxRevs' value. It must be an "\
-                             "integer: '%s' (type '%s')"\
+            raise P4LibError("Incorrect 'maxRevs' value. It must be an "
+                             "integer: '%s' (type '%s')"
                              % (maxRevs, type(maxRevs)))
 
         if type(files) in types.StringTypes:
@@ -1209,9 +1231,9 @@ class P4:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
         hits = []
-        revRe = re.compile("^... #(?P<rev>\d+) change (?P<change>\d+) "\
-                           "(?P<action>\w+) on (?P<date>[\d/]+) by "\
-                           "(?P<user>[^\s@]+)@(?P<client>[^\s@]+) "\
+        revRe = re.compile("^... #(?P<rev>\d+) change (?P<change>\d+) "
+                           "(?P<action>\w+) on (?P<date>[\d/]+) by "
+                           "(?P<user>[^\s@]+)@(?P<client>[^\s@]+) "
                            "\((?P<type>[\w+]+)\)( '(?P<description>.*?)')?$")
         for line in output.splitlines(1):
             if longOutput and not line.strip():
@@ -1236,7 +1258,7 @@ class P4:
                 # last rev's description.
                 hits[-1]['revs'][-1]['description'] += line[1:]
             else:
-                raise P4LibError("Unexpected 'p4 filelog' output: '%s'"\
+                raise P4LibError("Unexpected 'p4 filelog' output: '%s'"
                                  % line)
         return hits
 
@@ -1277,8 +1299,8 @@ class P4:
         log.debug("popen3 '%s'..." % cmd)
         i, o, e = os.popen3(cmd)
         hits = []
-        fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "\
-                            "(?P<action>\w+) change (?P<change>\d+) "\
+        fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "
+                            "(?P<action>\w+) change (?P<change>\d+) "
                             "\((?P<type>[\w+]+)\)$")
         try:
             startHitWithNextNode = 1
@@ -1308,7 +1330,7 @@ class P4:
         return hits
 
     def diff(self, files=[], diffFormat='', force=0, satisfying=None,
-             text=0, _raw=0, **p4options): 
+             text=0, _raw=0, **p4options):
         """Display diff of client files with depot files.
         
         "files" is a list of files or file wildcards to diff.
@@ -1333,7 +1355,7 @@ class P4:
         'localFile' key. Otherwise, each dict will include 'localFile',
         'depotFile', 'rev', and 'binary' (boolean) keys and possibly a
         'text' or a 'notes' key iff there are any differences. Generally
-        you will get a 'notes' key for differing binary files. 
+        you will get a 'notes' key for differing binary files.
 
         If '_raw' is true then the return value is simply a dictionary
         with the unprocessed results of calling p4:
@@ -1382,13 +1404,15 @@ class P4:
         #   - from 'p4 diff':
         #       ==== //depot/apps/px/p4lib.py#12 - c:\trentm\apps\px\p4lib.py ====
         #       ==== //depot/foo.doc#42 - c:\trentm\foo.doc ==== (binary)
-        header1Re = re.compile(r"^==== (?P<depotFile>//.*?)#(?P<rev>\d+) "\
+        header1Re = re.compile(r"^==== (?P<depotFile>//.*?)#(?P<rev>\d+) "
                                r"\((?P<type>[\w+]+)\) ====$")
-        header2Re = re.compile("^==== (?P<depotFile>//.*?)#(?P<rev>\d+) - "\
-                               "(?P<localFile>.+?) ===="\
+        header2Re = re.compile("^==== (?P<depotFile>//.*?)#(?P<rev>\d+) - "
+                               "(?P<localFile>.+?) ===="
                                "(?P<binary> \(binary\))?$")
         header3Re = re.compile(r"^--- (?P<depotFile>//.*?)\s+.*$")
         header4Re = re.compile(r"^\+\+\+ (?P<localFile>//.*?)\s+.*$")
+
+        LINE_DIFFER_TEXT = "(... files differ ...)\n"
         for line in outputLines:
             header1 = header1Re.match(line)
             header2 = header2Re.match(line)
@@ -1401,7 +1425,7 @@ class P4:
             elif header2:
                 hit = header2.groupdict()
                 hit['rev'] = int(hit['rev'])
-                hit['binary'] = not not hit['binary'] # get boolean value
+                hit['binary'] = not not hit['binary']  # get boolean value
                 hits.append(hit)
             elif header3:
                 hit = header3.groupdict()
@@ -1410,8 +1434,7 @@ class P4:
                 hits.append(hit)
             elif header4:
                 hits[-1].update(header4.groupdict())
-            elif not hits[-1].has_key('text')\
-              and line == "(... files differ ...)\n":
+            elif not hits[-1].has_key('text') and line == LINE_DIFFER_TEXT:
                 hits[-1]['notes'] = [line]
             else:
                 # This is a diff line.
@@ -1467,10 +1490,10 @@ class P4:
         cmd = _joinArgv(argv)
         i, o, e = os.popen3(cmd)
         diff = {}
-        infoRe = re.compile("^==== (?P<depotFile1>.+?)#(?P<rev1>\d+) "\
-                            "\((?P<type1>[\w+]+)\) - "\
-                            "(?P<depotFile2>.+?)#(?P<rev2>\d+) "\
-                            "\((?P<type2>[\w+]+)\) "\
+        infoRe = re.compile("^==== (?P<depotFile1>.+?)#(?P<rev1>\d+) "
+                            "\((?P<type1>[\w+]+)\) - "
+                            "(?P<depotFile2>.+?)#(?P<rev2>\d+) "
+                            "\((?P<type2>[\w+]+)\) "
                             "==== (?P<summary>\w+)$")
         try:
             while 1:
@@ -1480,13 +1503,13 @@ class P4:
                     if diff.has_key('notes'):
                         diff['notes'].append(node['data'])
                     else:
-                        diff['notes'] = [ node['data'] ]
+                        diff['notes'] = [node['data']]
                 elif node['code'] == 'info':
                     match = infoRe.match(node['data'])
                     d = match.groupdict()
                     d['rev1'] = int(d['rev1'])
                     d['rev2'] = int(d['rev2'])
-                    diff.update( match.groupdict() )
+                    diff.update(match.groupdict())
                 elif node['code'] == 'text':
                     if not diff.has_key('text') or diff['text'] is None:
                         diff['text'] = node['data']
@@ -1534,7 +1557,7 @@ class P4:
         #   //depot/hello.txt#1 - was edit, reverted
         #   //depot/test_g.txt#none - was add, abandoned
         hits = []
-        hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\w+))? - '\
+        hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\w+))? - '
                             '(?P<comment>.*)$')
         for line in output.splitlines(1):
             match = hitRe.match(line)
@@ -1580,7 +1603,7 @@ class P4:
                             line interaction.
 
         Returns a list of dicts representing commentary on each file for
-        which a resolve was attempted. Keys are: 'localFile', 'clientFile' 
+        which a resolve was attempted. Keys are: 'localFile', 'clientFile'
         'comment', and 'action'; and possibly 'diff chunks' if there was
         anything to merge.
 
@@ -1592,8 +1615,8 @@ class P4:
             files = [files]
         optv = []
         if autoMode is None:
-            raise P4LibError("'autoMode' must be non-None, otherwise "\
-                             "'p4 resolve' may initiate command line "\
+            raise P4LibError("'autoMode' must be non-None, otherwise "
+                             "'p4 resolve' may initiate command line "
                              "interaction, which will hang this method.")
         else:
             optv += ['-a%s' % autoMode]
@@ -1614,11 +1637,13 @@ class P4:
             #         files.
             SET_SIZE = 10
             for i in range(0, len(files), SET_SIZE):
-                set_argv = argv[:] + files[i:i+SET_SIZE]
+                set_argv = argv[:] + files[i:i + SET_SIZE]
                 stdout, stderr, retval = self._p4run(set_argv, **p4options)
                 results["stdout"] += stdout
                 results["stderr"] += stderr
-                results["retval"] += retval or 0 #XXX just add up retvals for now?!
+
+                #XXX just add up retvals for now?!
+                results["retval"] += retval or 0
         else:
             stdout, stderr, retval = self._p4run(argv, **p4options)
             results["stdout"] = stdout
@@ -1656,7 +1681,7 @@ class P4:
         #
         # Example output (see tm-bug for this):
         #   Non-text diff: 0 yours + 1 theirs + 0 both + 0 conflicting
-        introRe = re.compile('^(?P<localFile>.+?) - (merging|vs) '\
+        introRe = re.compile('^(?P<localFile>.+?) - (merging|vs) '
                              '(?P<depotFile>//.+?)#(?P<rev>\d+)$')
         diffRe = re.compile('^(Diff chunks|Non-text diff): '
                             '(?P<yours>\d+) yours \+ '
@@ -1686,7 +1711,7 @@ class P4:
                 hits[-1].update(match.groupdict())
                 log.info("parsed resolve 'action' line: '%s'" % line.strip())
                 continue
-            raise P4LibError("Internal error: could not parse 'p4 resolve' "\
+            raise P4LibError("Internal error: could not parse 'p4 resolve' "
                              "output line: line='%s' argv=%s" % (line, argv))
         return hits
 
@@ -1731,12 +1756,12 @@ class P4:
                 # Empty 'files' should default to all opened files in the
                 # 'default' changelist.
                 if not files:
-                    files = [{'depotFile': f['depotFile']}\
+                    files = [{'depotFile': f['depotFile']}
                              for f in self.opened()]
                 else:
                     #TODO: Add test to expect P4LibError if try to use
                     #      p4 wildcards in files.
-                    files = [{'depotFile': f['depotFile']}\
+                    files = [{'depotFile': f['depotFile']}
                              for f in self.where(files)]
                 # Build submission form file.
                 form = makeForm(files=files, description=description,
@@ -1744,8 +1769,8 @@ class P4:
                 formfile = _writeTemporaryForm(form)
                 argv = ['submit', '-i', '<', formfile]
             else:
-                raise P4LibError("Incorrect arguments. You must specify "\
-                                 "'change' OR you must specify 'files' and "\
+                raise P4LibError("Incorrect arguments. You must specify "
+                                 "'change' OR you must specify 'files' and "
                                  "'description'.")
 
             output, error, retval = self._p4run(argv, **p4options)
@@ -1777,9 +1802,9 @@ class P4:
                 re.compile('^Locking \d+ files \.\.\.$'),
                 re.compile('^(//.+?)#\d+ - refreshing$'),
             ]
-            fileRe = re.compile('^(?P<action>\w+) (?P<depotFile>//.+?)'\
+            fileRe = re.compile('^(?P<action>\w+) (?P<depotFile>//.+?)'
                                 '#(?P<rev>\d+)$')
-            resultRe = re.compile('^Change (?P<change>\d+) '\
+            resultRe = re.compile('^Change (?P<change>\d+) '
                                   '(?P<action>submitted)\.')
             result = {'files': []}
             for line in output.splitlines(1):
@@ -1807,8 +1832,8 @@ class P4:
                                  line.strip())
                         break
                 else:
-                    log.warn("Unrecognized output line from running %s: "\
-                             "'%s'. Please report this to the maintainer."\
+                    log.warn("Unrecognized output line from running %s: "
+                             "'%s'. Please report this to the maintainer."
                              % (argv, line))
             return result
         finally:
@@ -1833,7 +1858,8 @@ class P4:
         if type(files) in types.StringTypes:
             files = [files]
         optv = []
-        if change: optv += ['-c', str(change)]
+        if change:
+            optv += ['-c', str(change)]
 
         argv = ['delete'] + optv + files
         output, error, retval = self._p4run(argv, **p4options)
@@ -1844,8 +1870,8 @@ class P4:
         #   //depot/foo.txt#1 - opened for delete
         #   //depot/foo.txt - can't delete (already opened for edit)
         hits = []
-        hitRe = re.compile('^(?P<depotFile>.+?)(#(?P<rev>\d+))? - '\
-                            '(?P<comment>.*)$')
+        hitRe = re.compile('^(?P<depotFile>.+?)(#(?P<rev>\d+))? - '
+                           '(?P<comment>.*)$')
         for line in output.splitlines(1):
             match = hitRe.match(line)
             if match:
@@ -1854,8 +1880,8 @@ class P4:
                     hit['rev'] = int(hit['rev'])
                 hits.append(hit)
             else:
-                raise P4LibError("Internal error: could not parse "\
-                                 "'p4 delete' output line: '%s'. Please "\
+                raise P4LibError("Internal error: could not parse "
+                                 "'p4 delete' output line: '%s'. Please "
                                  "report this to the author." % line)
         return hits
 
@@ -1899,17 +1925,17 @@ class P4:
         """
         formfile = None
         try:
-            action = None # note action to know how to parse output below
+            action = None  # note action to know how to parse output below
             if delete:
                 action = "delete"
                 if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "\
+                    raise P4LibError("Incomplete/missing arguments: must "
                                      "specify 'name' of client to delete.")
                 argv = ['client', '-d', name]
             elif client is None:
                 action = "get"
                 if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "\
+                    raise P4LibError("Incomplete/missing arguments: must "
                                      "specify 'name' of client to get.")
                 argv = ['client', '-o', name]
             else:
@@ -1936,10 +1962,10 @@ class P4:
             elif action in ('create/update', 'delete'):
                 lines = output.splitlines(1)
                 # Example output:
-                #   Client trentm-ra not changed. 
+                #   Client trentm-ra not changed.
                 #   Client bertha-test deleted.
                 #   Client bertha-test saved.
-                resultRe = re.compile("^Client (?P<client>[^\s@]+)"\
+                resultRe = re.compile("^Client (?P<client>[^\s@]+)"
                     " (?P<action>not changed|deleted|saved)\.$")
                 match = resultRe.match(lines[0])
                 if match:
@@ -1949,7 +1975,7 @@ class P4:
                           "output: '%s'" % output
                     raise P4LibError(err)
             else:
-                raise P4LibError("Internal error: unexpected action: '%s'"\
+                raise P4LibError("Internal error: unexpected action: '%s'"
                                  % action)
 
             return rv
@@ -1979,8 +2005,8 @@ class P4:
 
         # Examples:
         #   Client trentm-ra 2002/03/18 root c:\trentm\ 'Created by trentm. '
-        clientRe = re.compile("^Client (?P<client>[^\s@]+) "\
-                              "(?P<update>[\d/]+) "\
+        clientRe = re.compile("^Client (?P<client>[^\s@]+) "
+                              "(?P<update>[\d/]+) "
                               "root (?P<root>.*?) '(?P<description>.*?)'$")
         clients = []
         for line in output.splitlines(1):
@@ -1989,7 +2015,7 @@ class P4:
                 client = match.groupdict()
                 clients.append(client)
             else:
-                raise P4LibError("Internal error: could not parse "\
+                raise P4LibError("Internal error: could not parse "
                                  "'p4 clients' output line: '%s'" % line)
         return clients
 
@@ -2030,17 +2056,17 @@ class P4:
         """
         formfile = None
         try:
-            action = None # note action to know how to parse output below
+            action = None  # note action to know how to parse output below
             if delete:
                 action = "delete"
                 if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "\
+                    raise P4LibError("Incomplete/missing arguments: must "
                                      "specify 'name' of label to delete.")
                 argv = ['label', '-d', name]
             elif label is None:
                 action = "get"
                 if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "\
+                    raise P4LibError("Incomplete/missing arguments: must "
                                      "specify 'name' of label to get.")
                 argv = ['label', '-o', name]
             else:
@@ -2067,11 +2093,11 @@ class P4:
             elif action in ('create/update', 'delete'):
                 lines = output.splitlines(1)
                 # Example output:
-                #   Label label_1 not changed. 
+                #   Label label_1 not changed.
                 #   Label label_2 deleted.
                 #   Label label_3 saved.
-                resultRe = re.compile("^Label (?P<label>[^\s@]+)"\
-                    " (?P<action>not changed|deleted|saved)\.$")
+                resultRe = re.compile("^Label (?P<label>[^\s@]+)"
+                                      " (?P<action>not changed|deleted|saved)\.$")
                 match = resultRe.match(lines[0])
                 if match:
                     rv = match.groupdict()
@@ -2080,7 +2106,7 @@ class P4:
                           "output: '%s'" % output
                     raise P4LibError(err)
             else:
-                raise P4LibError("Internal error: unexpected action: '%s'"\
+                raise P4LibError("Internal error: unexpected action: '%s'"
                                  % action)
 
             return rv
@@ -2107,8 +2133,8 @@ class P4:
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        labelRe = re.compile("^Label (?P<label>[^\s@]+) "\
-                             "(?P<update>[\d/]+) "\
+        labelRe = re.compile("^Label (?P<label>[^\s@]+) "
+                             "(?P<update>[\d/]+) "
                              "'(?P<description>.*?)'$")
         labels = []
         for line in output.splitlines(1):
@@ -2117,7 +2143,7 @@ class P4:
                 label = match.groupdict()
                 labels.append(label)
             else:
-                raise P4LibError("Internal error: could not parse "\
+                raise P4LibError("Internal error: could not parse "
                                  "'p4 labels' output line: '%s'" % line)
         return labels
 
@@ -2170,7 +2196,7 @@ class P4:
         #    ... //depot/foo - must resolve #2 before submitting
         # There are probably others forms.
         hits = []
-        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '\
+        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
                             '(?P<comment>.+?)$')
         for line in output.splitlines(1):
             if line.startswith('... '):
@@ -2184,7 +2210,7 @@ class P4:
                 hit['notes'] = []
                 hits.append(hit)
                 continue
-            raise P4LibError("Internal error: could not parse 'p4 flush'"\
+            raise P4LibError("Internal error: could not parse 'p4 flush'"
                              "output line: '%s'" % line)
         return hits
 
@@ -2225,17 +2251,17 @@ class P4:
         """
         formfile = None
         try:
-            action = None # note action to know how to parse output below
+            action = None  # note action to know how to parse output below
             if delete:
                 action = "delete"
                 if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "\
+                    raise P4LibError("Incomplete/missing arguments: must "
                                      "specify 'name' of branch to delete.")
                 argv = ['branch', '-d', name]
             elif branch is None:
                 action = "get"
                 if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "\
+                    raise P4LibError("Incomplete/missing arguments: must "
                                      "specify 'name' of branch to get.")
                 argv = ['branch', '-o', name]
             else:
@@ -2262,11 +2288,11 @@ class P4:
             elif action in ('create/update', 'delete'):
                 lines = output.splitlines(1)
                 # Example output:
-                #   Branch trentm-ra not changed. 
+                #   Branch trentm-ra not changed.
                 #   Branch bertha-test deleted.
                 #   Branch bertha-test saved.
-                resultRe = re.compile("^Branch (?P<branch>[^\s@]+)"\
-                    " (?P<action>not changed|deleted|saved)\.$")
+                resultRe = re.compile("^Branch (?P<branch>[^\s@]+)"
+                                      " (?P<action>not changed|deleted|saved)\.$")
                 match = resultRe.match(lines[0])
                 if match:
                     rv = match.groupdict()
@@ -2275,7 +2301,7 @@ class P4:
                           "output: '%s'" % output
                     raise P4LibError(err)
             else:
-                raise P4LibError("Internal error: unexpected action: '%s'"\
+                raise P4LibError("Internal error: unexpected action: '%s'"
                                  % action)
 
             return rv
@@ -2302,9 +2328,9 @@ class P4:
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        branchRe = re.compile("^Branch (?P<branch>[^\s@]+) "\
-                             "(?P<update>[\d/]+) "\
-                             "'(?P<description>.*?)'$")
+        branchRe = re.compile("^Branch (?P<branch>[^\s@]+) "
+                              "(?P<update>[\d/]+) "
+                              "'(?P<description>.*?)'$")
         branches = []
         for line in output.splitlines(1):
             match = branchRe.match(line)
@@ -2312,7 +2338,7 @@ class P4:
                 branch = match.groupdict()
                 branches.append(branch)
             else:
-                raise P4LibError("Internal error: could not parse "\
+                raise P4LibError("Internal error: could not parse "
                                  "'p4 branches' output line: '%s'" % line)
         return branches
 
@@ -2354,19 +2380,19 @@ class P4:
         results:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        _baseStat = {'clientFile':'',
-                     'depotFile':'',
-                     'path':'',
-                     'headAction':'',
+        _baseStat = {'clientFile': '',
+                     'depotFile': '',
+                     'path': '',
+                     'headAction': '',
                      'headChange': 0,
                      'headRev': 0,
-                     'headType':'',
+                     'headType': '',
                      'headTime': 0,
                      'haveRev': 0,
-                     'action':'',
-                     'actionOwner':'',
+                     'action': '',
+                     'actionOwner': '',
                      'change': '',
-                     'unresolved':'',
+                     'unresolved': '',
                      'ourLock': 0,
                      }
 
@@ -2375,7 +2401,7 @@ class P4:
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
-        argv = ['fstat','-C','-P'] + files
+        argv = ['fstat', '-C', '-P'] + files
         output, error, retval = self._p4run(argv, **p4options)
 
         parsed = ''.join(output)
@@ -2395,7 +2421,7 @@ class P4:
                 elif m[0] in ['headChange', 'headRev', 'headTime', 'haveRev']:
                     try:
                         hit[m[0]] = int(m[1])
-                    except ValueError, e:
+                    except ValueError:
                         hit[m[0]] = m[1]
                 else:
                     hit[m[0]] = m[1]
