@@ -387,25 +387,22 @@ def makeOptv(**options):
         >>> makeOptv(client='swatter', dir=None)
         ['-c', 'client']
     """
+    key_to_option = {"client": "-c",
+                     "dir": "-d",
+                     "host": "-H",
+                     "port": "-p",
+                     "password": "-P",
+                     "user": "-u"}
+
     optv = []
-    for key, val in options.items():
-        if val is None:
-            continue
-        if key == 'client':
-            optv.append('-c')
-        elif key == 'dir':
-            optv.append('-d')
-        elif key == 'host':
-            optv.append('-H')
-        elif key == 'port':
-            optv.append('-p')
-        elif key == 'password':
-            optv.append('-P')
-        elif key == 'user':
-            optv.append('-u')
-        else:
-            raise P4LibError("Unexpected keyword arg: '%s'" % key)
-        optv.append(val)
+    try:
+        for key, value in options.items():
+            if value:
+                optv.append(key_to_option[key])
+                optv.append(value)
+    except KeyError as key:
+        raise P4LibError("Unexpected keyword arg: %s" % key)
+
     return optv
 
 

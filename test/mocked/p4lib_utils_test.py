@@ -1,0 +1,35 @@
+import unittest
+import p4lib
+
+
+def list_to_dict(l):
+    return dict(zip(l[::2], l[1::2]))
+
+
+class MakeOptvTestCase(unittest.TestCase):
+    def test_returns_empty_list_if_no_arguments(self):
+        result = p4lib.makeOptv()
+        self.assertEqual([], result)
+
+    def test_skips_arguments_with_none_value(self):
+        result = p4lib.makeOptv(no_arg=None, port=None)
+        self.assertEqual([], result)
+
+    def test_raises_on_unexpected_argument(self):
+        self.assertRaises(p4lib.P4LibError,
+                          p4lib.makeOptv,
+                          no_arg=1,
+                          password="pass")
+
+    def test_transforms_known_arguments(self):
+        result = p4lib.makeOptv(client="client",
+                                dir="dir",
+                                host="host",
+                                port="port",
+                                password="pass",
+                                user="user")
+
+        expected = {'-d': 'dir', '-c': 'client', '-H': 'host',
+                    '-u': 'user', '-p': 'port', '-P': 'pass'}
+        
+        self.assertEqual(expected, list_to_dict(result))
