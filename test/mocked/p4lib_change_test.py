@@ -188,11 +188,10 @@ class ChangeTestCase(unittest.TestCase):
                           change=1234,
                           delete=True,
                           files=[])
-
         self.assertRaises(p4lib.P4LibError, p4.change,
                           change=1234,
                           delete=True,
-                          descritpion="")
+                          description="12")
 
     def test_raw_result(self):
         test_raw_result(self, CHANGE_DELETED, "change",
