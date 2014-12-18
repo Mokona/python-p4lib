@@ -45,7 +45,6 @@ import os
 import sys
 import pprint
 import re
-import types
 import marshal
 import getopt
 import tempfile
@@ -2433,5 +2432,3 @@ class P4:
                           'retval': retval}
         else:
             return hits
-
-
