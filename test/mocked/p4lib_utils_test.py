@@ -75,3 +75,28 @@ class ParseOptvTestCase(unittest.TestCase):
                     'password': 'pass', 'port': 'port', 'dir': 'dir'}
         
         self.assertEqual(expected, result)
+
+
+class ValuesToIntTestCase(unittest.TestCase):
+    def test_can_parse_empty_dict(self):
+        self.assertEqual({}, p4lib.values_to_int({}, []))
+        self.assertEqual({}, p4lib.values_to_int({}, ["key1", "key2"]))
+
+    def test_turns_parsable_to_int(self):
+        self.assertEqual({"k1": 1, "k2": 2, "k3": "3"},
+                         p4lib.values_to_int({"k1": "1", "k2": "2", "k3": "3"},
+                                             ["k1", "k2"]))
+
+    def test_raises_when_not_parsable(self):
+        self.assertRaises(ValueError, p4lib.values_to_int,
+                          {"k1": "str", "k2": "2", "k3": "3"},
+                          ["k1", "k2"])
+
+
+class PruneNoneValueTestCase(unittest.TestCase):
+    def test_can_parse_empty_dict(self):
+        self.assertEqual({}, p4lib.prune_none_values({}))
+
+    def test_removes_key_with_none_values(self):
+        self.assertEqual({"k1": "2"},
+                         p4lib.prune_none_values({"k1": "2", "k2": None}))
