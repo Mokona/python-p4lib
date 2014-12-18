@@ -383,8 +383,12 @@ def makeOptv(**options):
     
     Example:
         >>> makeOptv(client='swatter', dir='D:\\trentm')
+    Returns:
         ['-c', 'client', '-d', 'D:\\trentm']
+
+    Example:
         >>> makeOptv(client='swatter', dir=None)
+    Returns:
         ['-c', 'client']
     """
     key_to_option = {"client": "-c",
@@ -414,35 +418,33 @@ def parseOptv(optv):
     The returned option dictionary is suitable passing to the P4 constructor.
 
     Example:
-        >>> parseP4Optv(['-c', 'swatter', '-d', 'D:\\trentm'])
-        {'client': 'swatter',
-         'dir': 'D:\\trentm'}
+        parseP4Optv(['-c', 'swatter', '-d', 'D:\\trentm'])
+    Returns:
+        {'client': 'swatter', 'dir': 'D:\\trentm'}
     """
-    # Some of p4's options are not appropriate for later
-    # invocations. For example, '-h' and '-V' override output from
-    # running, say, 'p4 opened'; and '-G' and '-s' control the
-    # output format which this module is parsing (hence this module
-    # should control use of those options).
+    option_to_key = {"-c": "client",
+                     "-d": "dir",
+                     "-H": "host",
+                     "-p": "port",
+                     "-P": "password",
+                     "-u": "user"}
+
     optlist, dummy = getopt.getopt(optv, 'hVc:d:H:p:P:u:x:Gs')
     optd = {}
     for opt, optarg in optlist:
+        # Some of p4's options are not appropriate for later
+        # invocations. For example, '-h' and '-V' override output from
+        # running, say, 'p4 opened'; and '-G' and '-s' control the
+        # output format which this module is parsing (hence this module
+        # should control use of those options).
         if opt in ('-h', '-V', '-x'):
             raise P4LibError("The '%s' p4 option is not appropriate "
                              "for p4lib.P4." % opt)
         elif opt in ('-G', '-s'):
             log.info("Ignoring '%s' option." % opt)
-        elif opt == '-c':
-            optd['client'] = optarg
-        elif opt == '-d':
-            optd['dir'] = optarg
-        elif opt == '-H':
-            optd['host'] = optarg
-        elif opt == '-p':
-            optd['port'] = optarg
-        elif opt == '-P':
-            optd['password'] = optarg
-        elif opt == '-u':
-            optd['user'] = optarg
+        else:
+            key = option_to_key[opt]
+            optd[key] = optarg
     return optd
 
 
