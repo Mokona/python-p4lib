@@ -491,6 +491,27 @@ class P4:
         argv = [self.p4] + p4optv + argv
         return _run(argv)
 
+    def _batch_run(self, argv, files, p4options):
+        SET_SIZE = 10
+
+        results = {"stdout": '', "stderr": '', "retval": 0}
+        if files:
+            for i in range(0, len(files), SET_SIZE):
+                set_argv = argv[:] + files[i:i + SET_SIZE]
+                stdout, stderr, retval = self._p4run(set_argv, **p4options)
+                results["stdout"] += stdout
+                results["stderr"] += stderr
+
+                #XXX just add up retvals for now?!
+                results["retval"] += retval or 0
+        else:
+            stdout, stderr, retval = self._p4run(argv, **p4options)
+            results["stdout"] = stdout
+            results["stderr"] = stderr
+            results["retval"] = retval
+
+        return results
+
     def opened(self, files=[], allClients=0, change=None, _raw=0,
                **p4options):
         """Get a list of files opened in a pending changelist.
@@ -526,25 +547,7 @@ class P4:
             files = [files]
 
         argv = ['opened'] + optv
-        results = {"stdout": '', "stderr": '', "retval": 0}
-        if files:
-            #XXX:HACK Large sets of files can choke the cmd that we
-            #         spawn. Try to break it up into smaller chunks of
-            #         files.
-            SET_SIZE = 10
-            for i in range(0, len(files), SET_SIZE):
-                set_argv = argv[:] + files[i:i + SET_SIZE]
-                stdout, stderr, retval = self._p4run(set_argv, **p4options)
-                results["stdout"] += stdout
-                results["stderr"] += stderr
-
-                #XXX just add up retvals for now?!
-                results["retval"] += retval or 0
-        else:
-            stdout, stderr, retval = self._p4run(argv, **p4options)
-            results["stdout"] = stdout
-            results["stderr"] = stderr
-            results["retval"] = retval
+        results = self._batch_run(argv, files, p4options)
         
         if _raw:
             return results
@@ -972,25 +975,7 @@ class P4:
             optv.append('-n')
 
         argv = ['sync'] + optv
-        results = {"stdout": '', "stderr": '', "retval": 0}
-        if files:
-            #XXX:HACK Large sets of files can choke the cmd that we
-            #         spawn. Try to break it up into smaller chunks of
-            #         files.
-            SET_SIZE = 10
-            for i in range(0, len(files), SET_SIZE):
-                set_argv = argv[:] + files[i:i + SET_SIZE]
-                stdout, stderr, retval = self._p4run(set_argv, **p4options)
-                results["stdout"] += stdout
-                results["stderr"] += stderr
-
-                #XXX just add up retvals for now?!
-                results["retval"] += retval or 0
-        else:
-            stdout, stderr, retval = self._p4run(argv, **p4options)
-            results["stdout"] = stdout
-            results["stderr"] = stderr
-            results["retval"] = retval
+        results = self._batch_run(argv, files, p4options)
 
         if _raw:
             return results
@@ -1629,24 +1614,7 @@ class P4:
         argv = ['resolve'] + optv
 
         results = {"stdout": '', "stderr": '', "retval": 0}
-        if files:
-            #XXX:HACK Large sets of files can choke the cmd that we
-            #         spawn. Try to break it up into smaller chunks of
-            #         files.
-            SET_SIZE = 10
-            for i in range(0, len(files), SET_SIZE):
-                set_argv = argv[:] + files[i:i + SET_SIZE]
-                stdout, stderr, retval = self._p4run(set_argv, **p4options)
-                results["stdout"] += stdout
-                results["stderr"] += stderr
-
-                #XXX just add up retvals for now?!
-                results["retval"] += retval or 0
-        else:
-            stdout, stderr, retval = self._p4run(argv, **p4options)
-            results["stdout"] = stdout
-            results["stderr"] = stderr
-            results["retval"] = retval
+        results = self._batch_run(argv, files, p4options)
 
         if _raw:
             return results
