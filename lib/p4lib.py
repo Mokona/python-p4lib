@@ -244,6 +244,10 @@ def _argumentGenerator(arguments):
         elif isinstance(value, int):
             result.append(key)
             result.append(str(value))
+        elif isinstance(value, str):
+            if r"%s" in key:
+                if value:
+                    result.append(key % value)
     return result
 
 
@@ -549,7 +553,7 @@ class P4:
 
         return results
 
-    def opened(self, files=[], allClients=0, change=None, _raw=0,
+    def opened(self, files=[], allClients=False, change=None, _raw=False,
                **p4options):
         """Get a list of files opened in a pending changelist.
 
@@ -575,11 +579,7 @@ class P4:
         #   //depot/foo.txt#1 - edit change 12345 (text+w) by trentm@trentm-pliers
         # - none opened:
         #   foo.txt - file(s) not opened on this client.
-        optv = []
-        if allClients:
-            optv += ['-a']
-        if change:
-            optv += ['-c', str(change)]
+        optv = _argumentGenerator({'-a': allClients, '-c': change})
         if isinstance(files, str):
             files = [files]
 
@@ -716,7 +716,7 @@ class P4:
                 hits.append(hit)
         return hits
 
-    def describe(self, change, diffFormat='', shortForm=0, _raw=0,
+    def describe(self, change, diffFormat='', shortForm=False, _raw=False,
                  **p4options):
         """Get a description of the given changelist.
 
@@ -738,13 +738,12 @@ class P4:
         """
         if diffFormat not in ('', 'n', 'c', 's', 'u'):
             raise P4LibError("Incorrect diff format flag: '%s'" % diffFormat)
-        optv = []
-        if diffFormat:
-            optv.append('-d%s' % diffFormat)
-        if shortForm:
-            optv.append('-s')
+
+        optv = _argumentGenerator({"-d%s": diffFormat, "-s": shortForm})
+
         argv = ['describe'] + optv + [str(change)]
         output, error, retval = self._p4run(argv, **p4options)
+
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 

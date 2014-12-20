@@ -177,3 +177,13 @@ class ArgumentGeneratorTestCase(unittest.TestCase):
         desc = {"-a": 123}
         result = p4lib._argumentGenerator(desc)
         self.assertEqual(["-a", "123"], result)
+
+    def test_formats_strings_for_key(self):
+        desc = {"-a%s": "bcd"}
+        result = p4lib._argumentGenerator(desc)
+        self.assertEqual(["-abcd"], result)
+
+    def test_formats_strings_for_key_only_if_value(self):
+        desc = {"-a%s": ""}
+        result = p4lib._argumentGenerator(desc)
+        self.assertEqual([], result)
