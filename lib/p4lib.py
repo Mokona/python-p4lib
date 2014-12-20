@@ -2340,6 +2340,24 @@ class P4:
                      'ourLock': 0,
                      }
 
+        def match_file_block(stat):
+            matches = fileRe.findall(stat)
+            if not matches:
+                return None
+
+            matches = dict(matches)
+
+            hit = copy.copy(_baseStat)
+            hit.update(matches)
+
+            if 'ourLock' in matches:
+                hit['ourLock'] = 1
+
+            int_keys = ('headChange', 'headRev', 'headTime', 'haveRev')
+            hit = _values_to_int(hit, int_keys)
+
+            return hit
+
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
@@ -2349,25 +2367,10 @@ class P4:
         parsed = ''.join(output)
         parsed = re.split(r'(\r\n|\n){2}', parsed)
         
-        hits = []
         fileRe = re.compile("...\s(.*?)\s(.*)")
         
-        for stat in parsed:
-            matches = fileRe.findall(stat)
-            if not matches:
-                continue
-            hit = copy.copy(_baseStat)
-            for m in matches:
-                if m[0] == 'ourLock':
-                    hit['ourLock'] = 1
-                elif m[0] in ['headChange', 'headRev', 'headTime', 'haveRev']:
-                    try:
-                        hit[m[0]] = int(m[1])
-                    except ValueError:
-                        hit[m[0]] = m[1]
-                else:
-                    hit[m[0]] = m[1]
-            hits.append(hit)
+        all_stats = (match_file_block(stat) for stat in parsed)
+        hits = [hit for hit in all_stats if hit]
 
         if _raw:
             return hits, {'stdout': ''.join(output),
