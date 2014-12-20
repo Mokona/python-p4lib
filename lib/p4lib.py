@@ -248,6 +248,9 @@ def _argumentGenerator(arguments):
             if r"%s" in key:
                 if value:
                     result.append(key % value)
+            elif value:
+                result.append(key)
+                result.append(value)
     return result
 
 
@@ -906,8 +909,8 @@ class P4:
         finally:
             _removeTemporaryForm(formfile)
 
-    def changes(self, files=[], followIntegrations=0, longOutput=0,
-                max=None, status=None, _raw=0, **p4options):
+    def changes(self, files=[], followIntegrations=False, longOutput=False,
+                maximum=None, status=None, _raw=False, **p4options):
         """Return a list of pending and submitted changelists.
 
         "files" is a list of files or file wildcards that will limit the
@@ -916,7 +919,7 @@ class P4:
         "followIntegrations" (-i) specifies to include any changelists
             integrated into the given files.
         "longOutput" (-l) includes changelist descriptions.
-        "max" (-m) limits the results to the given number of most recent
+        "maximum" (-m) limits the results to the given number of most recent
             relevant changes.
         "status" (-s) limits the output to 'pending' or 'submitted'
             changelists.
@@ -928,28 +931,26 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if max is not None and not isinstance(max, int):
-            raise P4LibError("Incorrect 'max' value. It must be an integer: "
-                             "'%s' (type '%s')" % (max, type(max)))
+        if maximum is not None and not isinstance(maximum, int):
+            raise P4LibError("Incorrect 'maximum' value. It must be an integer: "
+                             "'%s' (type '%s')" % (maximum, type(maximum)))
         if status is not None and status not in ("pending", "submitted"):
             raise P4LibError("Incorrect 'status' value: '%s'" % status)
 
         if isinstance(files, str):
             files = [files]
 
-        optv = []
-        if followIntegrations:
-            optv.append('-i')
-        if longOutput:
-            optv.append('-l')
-        if max is not None:
-            optv += ['-m', str(max)]
-        if status is not None:
-            optv += ['-s', status]
+        optv = _argumentGenerator({"-i": followIntegrations,
+                                   "-l": longOutput,
+                                   "-m": maximum,
+                                   "-s": status})
+
         argv = ['changes'] + optv
         if files:
             argv += files
+
         output, error, retval = self._p4run(argv, **p4options)
+
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 

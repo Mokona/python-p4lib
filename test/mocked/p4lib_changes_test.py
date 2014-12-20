@@ -72,13 +72,13 @@ class ChangesTestCase(unittest.TestCase):
 
         p4 = p4lib.P4()
 
-        p4.changes(max=1)
+        p4.changes(maximum=1)
         p4lib._run.assert_called_with(['p4', 'changes', '-m', '1'])
 
     def test_max_must_be_integer(self):
         p4 = p4lib.P4()
 
-        self.assertRaises(p4lib.P4LibError, p4.changes, max="")
+        self.assertRaises(p4lib.P4LibError, p4.changes, maximum="")
 
     def test_can_specify_status(self):
         change_stdout(CHANGES_SHORT)
