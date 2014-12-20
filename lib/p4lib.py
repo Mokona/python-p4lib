@@ -254,6 +254,63 @@ def _argumentGenerator(arguments):
     return result
 
 
+def _parseDiffOutput(output):
+    if isinstance(output, str):
+        outputLines = output.splitlines(1)
+    else:
+        outputLines = output
+    hits = []
+    # Example header lines:
+    #   - from 'p4 describe':
+    #       ==== //depot/apps/px/ReadMe.txt#5 (text) ====
+    #       ==== //depot/main/Apps/Komodo-4.2/src/udl/luddite.py#2 (text+kwx) ====
+    #   - from 'p4 diff':
+    #       ==== //depot/apps/px/p4lib.py#12 - c:\trentm\apps\px\p4lib.py ====
+    #       ==== //depot/foo.doc#42 - c:\trentm\foo.doc ==== (binary)
+    header1Re = re.compile(r"^==== (?P<depotFile>//.*?)#(?P<rev>\d+) "
+                           r"\((?P<type>[\w+]+)\) ====$")
+    header2Re = re.compile("^==== (?P<depotFile>//.*?)#(?P<rev>\d+) - "
+                           "(?P<localFile>.+?) ===="
+                           "(?P<binary> \(binary\))?$")
+    header3Re = re.compile(r"^--- (?P<depotFile>//.*?)\s+.*$")
+    header4Re = re.compile(r"^\+\+\+ (?P<localFile>//.*?)\s+.*$")
+
+    LINE_DIFFER_TEXT = "(... files differ ...)\n"
+    for line in outputLines:
+        header1 = header1Re.match(line)
+        header2 = header2Re.match(line)
+        header3 = header3Re.match(line)
+        header4 = header4Re.match(line)
+        if header1:
+            hit = header1.groupdict()
+            hit['rev'] = int(hit['rev'])
+            hits.append(hit)
+        elif header2:
+            hit = header2.groupdict()
+            hit['rev'] = int(hit['rev'])
+            hit['binary'] = not not hit['binary']  # get boolean value
+            hits.append(hit)
+        elif header3:
+            hit = header3.groupdict()
+            hit['rev'] = 0
+            hit['binary'] = False
+            hits.append(hit)
+        elif header4:
+            hits[-1].update(header4.groupdict())
+        elif 'text' not in hits[-1] and line == LINE_DIFFER_TEXT:
+            hits[-1]['notes'] = [line]
+        else:
+            # This is a diff line.
+            if 'text' not in hits[-1]:
+                hits[-1]['text'] = ''
+                # XXX 'p4 describe' diff text includes a single
+                #     blank line after each header line before the
+                #     actual diff. Should this be stripped?
+            hits[-1]['text'] += line
+
+    return hits
+
+
 #---- public stuff
 
 
@@ -772,7 +829,7 @@ class P4:
             file['rev'] = int(file['rev'])
             desc['files'].append(file)
         if not shortForm:
-            desc['diff'] = self._parseDiffOutput(lines[diffsIdx + 2:])
+            desc['diff'] = _parseDiffOutput(lines[diffsIdx + 2:])
         return desc
 
     def change(self, files=None, description=None, change=None, delete=0,
@@ -1389,63 +1446,7 @@ class P4:
         if satisfying is not None:
             hits = [{'localFile': line[:-1]} for line in output.splitlines(1)]
         else:
-            hits = self._parseDiffOutput(output)
-        return hits
-
-    def _parseDiffOutput(self, output):
-        if isinstance(output, str):
-            outputLines = output.splitlines(1)
-        else:
-            outputLines = output
-        hits = []
-        # Example header lines:
-        #   - from 'p4 describe':
-        #       ==== //depot/apps/px/ReadMe.txt#5 (text) ====
-        #       ==== //depot/main/Apps/Komodo-4.2/src/udl/luddite.py#2 (text+kwx) ====
-        #   - from 'p4 diff':
-        #       ==== //depot/apps/px/p4lib.py#12 - c:\trentm\apps\px\p4lib.py ====
-        #       ==== //depot/foo.doc#42 - c:\trentm\foo.doc ==== (binary)
-        header1Re = re.compile(r"^==== (?P<depotFile>//.*?)#(?P<rev>\d+) "
-                               r"\((?P<type>[\w+]+)\) ====$")
-        header2Re = re.compile("^==== (?P<depotFile>//.*?)#(?P<rev>\d+) - "
-                               "(?P<localFile>.+?) ===="
-                               "(?P<binary> \(binary\))?$")
-        header3Re = re.compile(r"^--- (?P<depotFile>//.*?)\s+.*$")
-        header4Re = re.compile(r"^\+\+\+ (?P<localFile>//.*?)\s+.*$")
-
-        LINE_DIFFER_TEXT = "(... files differ ...)\n"
-        for line in outputLines:
-            header1 = header1Re.match(line)
-            header2 = header2Re.match(line)
-            header3 = header3Re.match(line)
-            header4 = header4Re.match(line)
-            if header1:
-                hit = header1.groupdict()
-                hit['rev'] = int(hit['rev'])
-                hits.append(hit)
-            elif header2:
-                hit = header2.groupdict()
-                hit['rev'] = int(hit['rev'])
-                hit['binary'] = not not hit['binary']  # get boolean value
-                hits.append(hit)
-            elif header3:
-                hit = header3.groupdict()
-                hit['rev'] = 0
-                hit['binary'] = False
-                hits.append(hit)
-            elif header4:
-                hits[-1].update(header4.groupdict())
-            elif 'text' not in hits[-1] and line == LINE_DIFFER_TEXT:
-                hits[-1]['notes'] = [line]
-            else:
-                # This is a diff line.
-                if 'text' not in hits[-1]:
-                    hits[-1]['text'] = ''
-                    # XXX 'p4 describe' diff text includes a single
-                    #     blank line after each header line before the
-                    #     actual diff. Should this be stripped?
-                hits[-1]['text'] += line
-
+            hits = _parseDiffOutput(output)
         return hits
 
     def diff2(self, file1, file2, diffFormat='', quiet=0, text=0,
