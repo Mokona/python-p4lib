@@ -763,16 +763,15 @@ class P4:
 
         # Output format is 'depot-file#revision - client-file'
         hits = []
-        haveRe = re.compile('(.+)#(\d+) - (.+)')
+        haveRe = re.compile('(?P<depotFile>.+)#(?P<rev>\d+)'
+                            ' - (?P<localFile>.+)')
         for line in output.splitlines(True):
             if line[-1] == '\n':
                 line = line[:-1]
             match = haveRe.match(line)
             if match:
-                hit = {}
-                hit['depotFile'] = match.group(1)
-                hit['rev'] = int(match.group(2))
-                hit['localFile'] = match.group(3)
+                hit = match.groupdict()
+                hit['rev'] = int(hit['rev'])
                 hits.append(hit)
         return hits
 
