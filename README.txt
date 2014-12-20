@@ -181,6 +181,13 @@ Personally, the extensions that I find most useful are:
 Change Log
 ----------
 
+### v0.9.6b
+
+- Arguments designing switches now take boolean and no more 0/1 int values.
+  This is a breaking change if you used 0/1 int values, as the command won't
+  take them. If you already used boolean values, leaning on the fact that
+  True/False are converted to 1/0, then you're safe.
+
 ### v0.9.5
 - Fix a problem identified by "j w" where
   `p4.edit(<path>, change=123)` would fail if the path was already
