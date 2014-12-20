@@ -216,6 +216,25 @@ def _removeTemporaryForm(formfile):
     if formfile:
         os.remove(formfile)
 
+
+def _values_to_int(fileinfo, list_of_keys):
+    for key in list_of_keys:
+        if key in fileinfo:
+            value = fileinfo[key]
+            if value:
+                fileinfo[key] = int(value)
+
+    return fileinfo
+
+
+def _prune_none_values(fileinfo):
+    for key in fileinfo.keys():
+        if fileinfo[key] is None:
+            del fileinfo[key]
+
+    return fileinfo
+
+
 #---- public stuff
 
 
@@ -454,23 +473,6 @@ def parseOptv(optv):
     return optd
 
 
-def values_to_int(fileinfo, list_of_keys):
-    for key in list_of_keys:
-        if key in fileinfo:
-            value = fileinfo[key]
-            if value:
-                fileinfo[key] = int(value)
-
-    return fileinfo
-
-def prune_none_values(fileinfo):
-    for key in fileinfo.keys():
-        if fileinfo[key] is None:
-            del fileinfo[key]
-
-    return fileinfo
-
-
 class P4:
     """A proxy to the Perforce client app 'p4'."""
     def __init__(self, p4='p4', **options):
@@ -592,13 +594,12 @@ class P4:
                                  "author." % line)
 
             fileinfo = match.groupdict()
-
-            fileinfo = values_to_int(fileinfo, ['rev', 'change'])
+            fileinfo = _values_to_int(fileinfo, ['rev', 'change'])
 
             if not fileinfo['change']:
                 fileinfo['change'] = 'default'
 
-            fileinfo = prune_none_values(fileinfo)
+            fileinfo = _prune_none_values(fileinfo)
 
             files.append(fileinfo)
 
