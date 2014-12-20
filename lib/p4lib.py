@@ -254,6 +254,12 @@ def _argumentGenerator(arguments):
     return result
 
 
+def _normalizeFiles(files):
+    if isinstance(files, str):
+        return [files]
+    return files
+
+
 def _parseDiffOutput(output):
     if isinstance(output, str):
         outputLines = output.splitlines(True)
@@ -640,11 +646,9 @@ class P4:
         # - none opened:
         #   foo.txt - file(s) not opened on this client.
         optv = _argumentGenerator({'-a': allClients, '-c': change})
-        if isinstance(files, str):
-            files = [files]
 
         argv = ['opened'] + optv
-        results = self._batch_run(argv, files, p4options)
+        results = self._batch_run(argv, _normalizeFiles(files), p4options)
         
         if _raw:
             return results
@@ -699,13 +703,12 @@ class P4:
         #  //depot/foo/%1 //trentm-ra/foo/%1 c:\trentm\foo\%1
         # The last one is surprising. It comes from using '*' in the
         # client spec.
-        if isinstance(files, str):
-            files = [files]
-
         argv = ['where']
         if files:
-            argv += files
+            argv += _normalizeFiles(files)
+
         output, error, retval = self._p4run(argv, **p4options)
+
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
@@ -751,13 +754,12 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
-
         argv = ['have']
         if files:
-            argv += files
+            argv += _normalizeFiles(files)
+
         output, error, retval = self._p4run(argv, **p4options)
+
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
@@ -871,8 +873,7 @@ class P4:
         #    allowed: presumed to be forms?
         formfile = None
         try:
-            if isinstance(files, str):
-                files = [files]
+            files = _normalizeFiles(files)
 
             action = None  # note action to know how to parse output below
             if change and files is None and not description:
@@ -993,9 +994,6 @@ class P4:
         if status is not None and status not in ("pending", "submitted"):
             raise P4LibError("Incorrect 'status' value: '%s'" % status)
 
-        if isinstance(files, str):
-            files = [files]
-
         optv = _argumentGenerator({'-i': followIntegrations,
                                    '-l': longOutput,
                                    '-m': maximum,
@@ -1003,7 +1001,7 @@ class P4:
 
         argv = ['changes'] + optv
         if files:
-            argv += files
+            argv += _normalizeFiles(files)
 
         output, error, retval = self._p4run(argv, **p4options)
 
@@ -1060,12 +1058,10 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
         optv = _argumentGenerator({'-f': force, '-n': dryrun})
 
         argv = ['sync'] + optv
-        results = self._batch_run(argv, files, p4options)
+        results = self._batch_run(argv, _normalizeFiles(files), p4options)
 
         if _raw:
             return results
@@ -1112,12 +1108,9 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
-
         optv = _argumentGenerator({'-c': change, '-t': filetype})
         
-        argv = ['edit'] + optv + files
+        argv = ['edit'] + optv + _normalizeFiles(files)
         output, error, retval = self._p4run(argv, **p4options)
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
@@ -1180,12 +1173,9 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
-
         optv = _argumentGenerator({'-c': change, '-t': filetype})
         
-        argv = ['add'] + optv + files
+        argv = ['add'] + optv + _normalizeFiles(files)
         output, error, retval = self._p4run(argv, **p4options)
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
@@ -1233,12 +1223,10 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
-        argv = ['files'] + files
+        argv = ['files'] + _normalizeFiles(files)
         output, error, retval = self._p4run(argv, **p4options)
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
@@ -1279,9 +1267,6 @@ class P4:
             raise P4LibError("Incorrect 'maxRevs' value. It must be an "
                              "integer: '%s' (type '%s')"
                              % (maxRevs, type(maxRevs)))
-
-        if isinstance(files, str):
-            files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
@@ -1289,7 +1274,7 @@ class P4:
                                    '-l': longOutput,
                                    '-m': maxRevs})
 
-        argv = ['filelog'] + optv + files
+        argv = ['filelog'] + optv + _normalizeFiles(files)
         output, error, retval = self._p4run(argv, **p4options)
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
@@ -1340,8 +1325,6 @@ class P4:
         The 'text' key will not be present if the file is binary. If
         both 'quiet' and 'localFile', there will be no hits at all.
         """
-        if isinstance(files, str):
-            files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
@@ -1355,7 +1338,7 @@ class P4:
             p4optv = makeOptv(**d)
         else:
             p4optv = self._optv
-        argv = [self.p4, '-G'] + p4optv + ['print'] + optv + files
+        argv = [self.p4, '-G'] + p4optv + ['print'] + optv + _normalizeFiles(files)
         cmd = _joinArgv(argv)
         log.debug("popen3 '%s'..." % cmd)
         i, o, e = os.popen3(cmd)
@@ -1422,8 +1405,6 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
         if diffFormat not in ('', 'n', 'c', 's', 'u'):
             raise P4LibError("Incorrect diff format flag: '%s'" % diffFormat)
         if satisfying is not None\
@@ -1437,7 +1418,7 @@ class P4:
 
         # There is *no* to properly and reliably parse out multiple file
         # output without using -s or -G. Use the latter. (XXX Huh?)
-        argv = ['diff'] + optv + files
+        argv = ['diff'] + optv + _normalizeFiles(files)
         output, error, retval = self._p4run(argv, **p4options)
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
@@ -1539,12 +1520,9 @@ class P4:
         if not unchangedOnly and not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
-        if isinstance(files, str):
-            files = [files]
-
         optv = _argumentGenerator({'-c': change, '-a': unchangedOnly})
 
-        argv = ['revert'] + optv + files
+        argv = ['revert'] + optv + _normalizeFiles(files)
         output, error, retval = self._p4run(argv, **p4options)
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
@@ -1612,9 +1590,6 @@ class P4:
                              "'p4 resolve' may initiate command line "
                              "interaction, which will hang this method.")
 
-        if isinstance(files, str):
-            files = [files]
-
         optv = _argumentGenerator({'-f': force,
                                    '-n': dryrun,
                                    '-t': text,
@@ -1625,7 +1600,7 @@ class P4:
         argv = ['resolve'] + optv
 
         results = {"stdout": '', "stderr": '', "retval": 0}
-        results = self._batch_run(argv, files, p4options)
+        results = self._batch_run(argv, _normalizeFiles(files), p4options)
 
         if _raw:
             return results
@@ -1725,8 +1700,8 @@ class P4:
         #   - Structure this code more like change, client, label, & branch.
         formfile = None
         try:
-            if isinstance(files, str):
-                files = [files]
+            files = _normalizeFiles(files)
+
             if change and not files and not description:
                 argv = ['submit', '-c', str(change)]
             elif not change and files is not None and description:
@@ -1832,12 +1807,9 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
-
         optv = _argumentGenerator({'-c': change})
 
-        argv = ['delete'] + optv + files
+        argv = ['delete'] + optv + _normalizeFiles(files)
         output, error, retval = self._p4run(argv, **p4options)
 
         if _raw:
@@ -2150,15 +2122,12 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
-
         optv = _argumentGenerator({'-f': force,
                                    '-n': dryrun})
 
         argv = ['flush'] + optv
         if files:
-            argv += files
+            argv += _normalizeFiles(files)
         output, error, retval = self._p4run(argv, **p4options)
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
@@ -2371,12 +2340,10 @@ class P4:
                      'ourLock': 0,
                      }
 
-        if isinstance(files, str):
-            files = [files]
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
-        argv = ['fstat', '-C', '-P'] + files
+        argv = ['fstat', '-C', '-P'] + _normalizeFiles(files)
         output, error, retval = self._p4run(argv, **p4options)
 
         parsed = ''.join(output)

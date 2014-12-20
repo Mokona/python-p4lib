@@ -197,3 +197,14 @@ class ArgumentGeneratorTestCase(unittest.TestCase):
         desc = {"-a%s": ""}
         result = p4lib._argumentGenerator(desc)
         self.assertEqual([], result)
+
+
+class NormalizeFilesTestCase(unittest.TestCase):
+    def test_returns_a_list_when_given_a_list(self):
+        l = ["f1", "f2"]
+        result = p4lib._normalizeFiles(l)
+        self.assertEqual(l, result)
+
+    def test_returns_a_list_when_given_a_file(self):
+        result = p4lib._normalizeFiles("file.cpp")
+        self.assertEqual(["file.cpp"], result)
