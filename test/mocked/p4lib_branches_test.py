@@ -8,6 +8,8 @@ BRANCHES_OUTPUT = """Branch branch_1 2002/03/18 'A first branch'
 Branch branch_2 2014/11/28 'A second branch'
 """
 
+WRONG_OUTPUT = """Nothing really to parse..."""
+
 
 class BranchesTestCase(unittest.TestCase):
     def setUp(self):
@@ -31,6 +33,10 @@ class BranchesTestCase(unittest.TestCase):
                       'description': 'A second branch',
                       'update': '2014/11/28'}
         self.assertEqual(expected_2, result[1])
+
+    def test_raises_if_cannot_parse(self):
+        change_stdout(WRONG_OUTPUT)
+        self.assertRaises(p4lib.P4LibError, self.p4.branches)
 
     def test_raw_result(self):
         test_raw_result(self, BRANCHES_OUTPUT, "branches")

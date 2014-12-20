@@ -2275,15 +2275,17 @@ class P4:
         branchRe = re.compile("^Branch (?P<branch>[^\s@]+) "
                               "(?P<update>[\d/]+) "
                               "'(?P<description>.*?)'$")
-        branches = []
-        for line in output.splitlines(True):
+
+        def match_or_raises(line):
             match = branchRe.match(line)
-            if match:
-                branch = match.groupdict()
-                branches.append(branch)
-            else:
+            if not match:
                 raise P4LibError("Internal error: could not parse "
                                  "'p4 branches' output line: '%s'" % line)
+            return match
+
+        all_matches = (match_or_raises(l) for l in output.splitlines(True))
+        branches = [match.groupdict() for match in all_matches]
+
         return branches
 
     def fstat(self, files, _raw=0, **p4options):
