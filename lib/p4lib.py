@@ -294,83 +294,89 @@ def parseForm(content):
         - A "Change" value will be converted to an int if
           appropriate.
     """
+    def splitSections(lines):
+        # Example form:
+        #   # A Perforce Change Specification.
+        #   #
+        #   #  Change:      The change number. 'new' on a n...
+        #   <snip>
+        #   #               to this changelist.  You may de...
+        #   
+        #   Change: 1
+        #   
+        #   Date:   2002/05/08 23:24:54
+        #   <snip>
+        #   Description:
+        #           create the initial change
+        #   
+        #   Files:
+        #           //depot/test_edit_pending_change.txt    # add
+        spec = {}
+
+        currkey = None  # If non-None, then we are in a multi-line block.
+        for line in lines:
+            if line.strip().startswith('#'):
+                continue    # skip comment lines
+            if currkey:     # i.e. accumulating a multi-line block
+                if line.startswith('\t'):
+                    spec[currkey] += line[1:]
+                elif not line.strip():
+                    spec[currkey] += '\n'
+                else:
+                    # This is the start of a new section. Trim all
+                    # trailing newlines from block section, as
+                    # Perforce does.
+                    spec[currkey] = spec[currkey].rstrip("\n")
+                    currkey = None
+            if not currkey:  # i.e. not accumulating a multi-line block
+                if not line.strip():
+                    continue  # skip empty lines
+                key, remainder = line.split(':', 1)
+                if not remainder.strip():   # this is a multi-line block
+                    currkey = key.lower()
+                    spec[currkey] = ''
+                else:
+                    spec[key.lower()] = remainder.strip()
+        if currkey:
+            # Trim all trailing newlines from block section, as
+            # Perforce does.
+            spec[currkey] = spec[currkey].rstrip("\n")
+
+        return spec
+
+    def fileToDict(line, fileRe):
+        match = fileRe.match(line)
+        try:
+            return match.groupdict()
+        except AttributeError:
+            pprint.pprint(line)
+            err = "Internal error: could not parse P4 form "\
+                  "'Files:' section line: '%s'" % line
+            raise P4LibError(err)
+
+    def processSpecialValues(spec):
+        for key, value in spec.items():
+            if key == "change":
+                try:
+                    spec[key] = int(value)
+                except ValueError:
+                    pass
+            elif key == "files":
+                fileRe = re.compile('^(?P<depotFile>//.+?)\t'
+                                    '# (?P<action>\w+)$')
+                spec[key] = [fileToDict(line, fileRe)
+                             for line in value.split('\n')
+                             if line.strip()]
+
+        return spec
+
     if isinstance(content, str):
         lines = content.splitlines(1)
     else:
         lines = content
-    # Example form:
-    #   # A Perforce Change Specification.
-    #   #
-    #   #  Change:      The change number. 'new' on a n...
-    #   <snip>
-    #   #               to this changelist.  You may de...
-    #   
-    #   Change: 1
-    #   
-    #   Date:   2002/05/08 23:24:54
-    #   <snip>
-    #   Description:
-    #           create the initial change
-    #   
-    #   Files:
-    #           //depot/test_edit_pending_change.txt    # add
-    spec = {}
 
-    # Parse out all sections into strings.
-    currkey = None  # If non-None, then we are in a multi-line block.
-    for line in lines:
-        if line.strip().startswith('#'):
-            continue    # skip comment lines
-        if currkey:     # i.e. accumulating a multi-line block
-            if line.startswith('\t'):
-                spec[currkey] += line[1:]
-            elif not line.strip():
-                spec[currkey] += '\n'
-            else:
-                # This is the start of a new section. Trim all
-                # trailing newlines from block section, as
-                # Perforce does.
-                while spec[currkey].endswith('\n'):
-                    spec[currkey] = spec[currkey][:-1]
-                currkey = None
-        if not currkey:  # i.e. not accumulating a multi-line block
-            if not line.strip():
-                continue  # skip empty lines
-            key, remainder = line.split(':', 1)
-            if not remainder.strip():   # this is a multi-line block
-                currkey = key.lower()
-                spec[currkey] = ''
-            else:
-                spec[key.lower()] = remainder.strip()
-    if currkey:
-        # Trim all trailing newlines from block section, as
-        # Perforce does.
-        while spec[currkey].endswith('\n'):
-            spec[currkey] = spec[currkey][:-1]
-
-    # Do any special processing on values.
-    for key, value in spec.items():
-        if key == "change":
-            try:
-                spec[key] = int(value)
-            except ValueError:
-                pass
-        elif key == "files":
-            spec[key] = []
-            fileRe = re.compile('^(?P<depotFile>//.+?)\t'
-                                '# (?P<action>\w+)$')
-            for line in value.split('\n'):
-                if not line.strip():
-                    continue
-                match = fileRe.match(line)
-                try:
-                    spec[key].append(match.groupdict())
-                except AttributeError:
-                    pprint.pprint(value)
-                    pprint.pprint(spec)
-                    err = "Internal error: could not parse P4 form "\
-                          "'Files:' section line: '%s'" % line
-                    raise P4LibError(err)
+    spec = splitSections(lines)
+    spec = processSpecialValues(spec)
 
     return spec
 

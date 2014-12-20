@@ -128,9 +128,34 @@ Key2: Value2"""
         self.assertEqual({"key1": "Value1", "key2": "Value2"}, result)
 
     def test_parses_multi_lines(self):
+        # Newlines at the end are there to verify they are stripped
         lines = """Key1:
 \tValue_line_1
-\tValue_line 2"""
+\tValue_line 2
+
+
+Key2:
+\tValue_line_1
+Key3:
+\tValue_line_1
+
+"""
         result = p4lib.parseForm(lines)
-        expected = {'key1': 'Value_line_1\nValue_line 2'}
+        expected = {'key1': 'Value_line_1\nValue_line 2',
+                    'key2': 'Value_line_1',
+                    'key3': 'Value_line_1'}
         self.assertEqual(expected, result)
+
+    def test_parses_files(self):
+        lines = """Files:
+\t//file1.cpp\t# add
+\t//file2.cpp\t# edit"""
+        result = p4lib.parseForm(lines)
+        expected = {'files': [{'action': 'add', 'depotFile': '//file1.cpp'},
+                              {'action': 'edit', 'depotFile': '//file2.cpp'}]}
+        self.assertEqual(expected, result)
+
+    def test_parses_change_to_int(self):
+        line = "Change: 1234"
+        result = p4lib.parseForm(line)
+        self.assertEqual({"change": 1234}, result)
