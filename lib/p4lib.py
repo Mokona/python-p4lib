@@ -711,28 +711,28 @@ class P4:
 
         results = []
         for line in output.splitlines(1):
-            file = {}
+            fileinfo = {}
             if line[-1] == '\n':
                 line = line[:-1]
             if line.startswith('-'):
-                file['minus'] = 1
+                fileinfo['minus'] = 1
                 line = line[1:]
             else:
-                file['minus'] = 0
+                fileinfo['minus'] = 0
             depotFileStart = line.find('//')
             clientFileStart = line.find('//', depotFileStart + 2)
-            file['depotFile'] = line[depotFileStart:clientFileStart - 1]
+            fileinfo['depotFile'] = line[depotFileStart:clientFileStart - 1]
             if sys.platform.startswith('win'):
-                assert ':' not in file['depotFile'],\
+                assert ':' not in fileinfo['depotFile'],\
                        "Current parsing cannot handle this line '%s'." % line
                 localFileStart = line.find(':', clientFileStart + 2) - 1
             else:
-                assert file['depotFile'].find(' /') == -1,\
+                assert fileinfo['depotFile'].find(' /') == -1,\
                     "Current parsing cannot handle this line '%s'." % line
                 localFileStart = line.find(' /', clientFileStart + 2) + 1
-            file['clientFile'] = line[clientFileStart:localFileStart - 1]
-            file['localFile'] = line[localFileStart:]
-            results.append(file)
+            fileinfo['clientFile'] = line[clientFileStart:localFileStart - 1]
+            fileinfo['localFile'] = line[localFileStart:]
+            results.append(fileinfo)
         return results
 
     def have(self, files=[], _raw=0, **p4options):
