@@ -100,3 +100,37 @@ class PruneNoneValueTestCase(unittest.TestCase):
     def test_removes_key_with_none_values(self):
         self.assertEqual({"k1": "2"},
                          p4lib.prune_none_values({"k1": "2", "k2": None}))
+
+
+class ParseFormTestCase(unittest.TestCase):
+    def test_accepts_empty_string(self):
+        result = p4lib.parseForm("")
+        self.assertEqual({}, result)
+
+    def test_parses_one_line(self):
+        line = "Key: Value"
+        result = p4lib.parseForm(line)
+        self.assertEqual({"key": "Value"}, result)
+
+    def test_skips_commentaries(self):
+        line = "#Key: Value"
+        result = p4lib.parseForm(line)
+        self.assertEqual({}, result)
+
+        line = "   #Key: Value   "
+        result = p4lib.parseForm(line)
+        self.assertEqual({}, result)
+
+    def test_parses_two_keys(self):
+        line = """Key1: Value1
+Key2: Value2"""
+        result = p4lib.parseForm(line)
+        self.assertEqual({"key1": "Value1", "key2": "Value2"}, result)
+
+    def test_parses_multi_lines(self):
+        lines = """Key1:
+\tValue_line_1
+\tValue_line 2"""
+        result = p4lib.parseForm(lines)
+        expected = {'key1': 'Value_line_1\nValue_line 2'}
+        self.assertEqual(expected, result)
