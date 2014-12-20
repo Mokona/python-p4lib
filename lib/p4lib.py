@@ -235,6 +235,18 @@ def _prune_none_values(fileinfo):
     return fileinfo
 
 
+def _argumentGenerator(arguments):
+    result = []
+    for key, value in arguments.items():
+        if isinstance(value, bool):
+            if value:
+                result.append(key)
+        elif isinstance(value, int):
+            result.append(key)
+            result.append(str(value))
+    return result
+
+
 #---- public stuff
 
 

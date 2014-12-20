@@ -85,7 +85,7 @@ class ValuesToIntTestCase(unittest.TestCase):
     def test_turns_parsable_to_int(self):
         self.assertEqual({"k1": 1, "k2": 2, "k3": "3"},
                          p4lib._values_to_int({"k1": "1", "k2": "2", "k3": "3"},
-                                             ["k1", "k2"]))
+                                              ["k1", "k2"]))
 
     def test_raises_when_not_parsable(self):
         self.assertRaises(ValueError, p4lib._values_to_int,
@@ -159,3 +159,21 @@ Key3:
         line = "Change: 1234"
         result = p4lib.parseForm(line)
         self.assertEqual({"change": 1234}, result)
+
+
+class ArgumentGeneratorTestCase(unittest.TestCase):
+    def test_gives_empty_list_for_no_argument(self):
+        result = p4lib._argumentGenerator({})
+        self.assertEqual([], result)
+
+    def test_appends_switch_for_bool_arguments(self):
+        desc = {"-a": True, "-n": False, "-b": True}
+        result = p4lib._argumentGenerator(desc)
+        self.assertIn("-a", result)
+        self.assertIn("-b", result)
+        self.assertNotIn("-n", result)
+
+    def test_turns_int_arguments_to_str(self):
+        desc = {"-a": 123}
+        result = p4lib._argumentGenerator(desc)
+        self.assertEqual(["-a", "123"], result)
