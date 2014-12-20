@@ -824,9 +824,9 @@ class P4:
         fileRe = re.compile('^... (?P<depotFile>.+?)#(?P<rev>\d+) '
                             '(?P<action>\w+)$')
         for line in lines[filesIdx + 2:diffsIdx - 1]:
-            file = fileRe.match(line).groupdict()
-            file['rev'] = int(file['rev'])
-            desc['files'].append(file)
+            fileinfo = fileRe.match(line).groupdict()
+            fileinfo['rev'] = int(fileinfo['rev'])
+            desc['files'].append(fileinfo)
         if not shortForm:
             desc['diff'] = _parseDiffOutput(lines[diffsIdx + 2:])
         return desc
