@@ -9,10 +9,7 @@
 """Test p4lib.py's interface to 'p4 delete'."""
 
 import os
-import sys
 import unittest
-import types
-import pprint
 
 import testsupport
 from p4lib import P4, P4LibError
@@ -36,9 +33,10 @@ class DeleteTestCase(unittest.TestCase):
             # Now delete the file.
             result = p4.delete(fname)
             self.failUnless(result[0]['comment'] == 'opened for delete')
-            self.failUnless(result[0]['depotFile']\
+
+            self.failUnless(result[0]['depotFile']
                             == p4.where(fname)[0]['depotFile'])
-            self.failUnless(type(result[0]['rev']) == types.IntType)
+            self.failUnless(isinstance(result[0]['rev'], int))
             opened = p4.opened(fname)
             self.failUnless(opened[0]['action'] == 'delete')
             self.failUnless(opened[0]['depotFile'] == result[0]['depotFile'])
@@ -66,7 +64,7 @@ class DeleteTestCase(unittest.TestCase):
             results = p4.delete([fname1, fname2])
             for result in results:
                 self.failUnless(result['comment'] == 'opened for delete')
-                self.failUnless(type(result['rev']) == types.IntType)
+                self.failUnless(isinstance(result['rev'], int))
 
             # cleanup
             p4.revert([fname1, fname2])
@@ -117,11 +115,11 @@ class DeleteTestCase(unittest.TestCase):
             c = p4.change([], 'empty pending change for deleted files')
             cnum = c['change']
             result = p4.delete(fname, change=cnum)
-            self.failUnless(result[0]['depotFile']\
+            self.failUnless(result[0]['depotFile']
                             == p4.where(fname)[0]['depotFile'])
-            self.failUnless(type(result[0]['rev']) == types.IntType)
+            self.failUnless(isinstance(result[0]['rev'], int))
             c = p4.change(change=cnum)
-            self.failUnless(c['files'][0]['depotFile']\
+            self.failUnless(c['files'][0]['depotFile']
                             == result[0]['depotFile'])
             self.failUnless(c['files'][0]['action'] == 'delete')
 
@@ -146,18 +144,19 @@ class DeleteTestCase(unittest.TestCase):
             p4.add(fname)
             p4.submit(fname, 'add this file to be deleted')
 
-            latestCnum = p4.changes(max=1)[0]['change']
+            latestCnum = p4.changes(maximum=1)[0]['change']
             # Specify an already submitted change.
             self.failUnlessRaises(P4LibError, p4.delete, fname,
                                   change=latestCnum)
             # Specify a non-existant change.
             self.failUnlessRaises(P4LibError, p4.delete, fname,
-                                  change=latestCnum+1)
+                                  change=latestCnum + 1)
 
             # cleanup
             p4.revert(fname)
         finally:
             os.chdir(top)
+
 
 def suite():
     """Return a unittest.TestSuite to be used by test.py."""

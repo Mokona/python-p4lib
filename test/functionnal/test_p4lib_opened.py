@@ -9,9 +9,7 @@
 """Test p4lib.py's interface to 'p4 opened'."""
 
 import os
-import sys
 import unittest
-import pprint
 
 import testsupport
 from p4lib import P4, P4LibError
@@ -60,9 +58,9 @@ class OpenedTestCase(unittest.TestCase):
             self.failIf(results, "Unexpected results: %r" % results)
 
             self.failUnlessRaises(P4LibError, p4.opened, change=123,
-                                  allClients=1)
+                                  allClients=True)
             self.failUnlessRaises(P4LibError, p4.opened, change='foo',
-                                  allClients=1)
+                                  allClients=True)
         finally:
             os.chdir(top)
 
