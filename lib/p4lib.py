@@ -256,7 +256,7 @@ def _argumentGenerator(arguments):
 
 def _parseDiffOutput(output):
     if isinstance(output, str):
-        outputLines = output.splitlines(1)
+        outputLines = output.splitlines(True)
     else:
         outputLines = output
     hits = []
@@ -466,7 +466,7 @@ def parseForm(content):
         return spec
 
     if isinstance(content, str):
-        lines = content.splitlines(1)
+        lines = content.splitlines(True)
     else:
         lines = content
 
@@ -658,7 +658,7 @@ class P4:
             ((?P<user>[^\s@]+)@(?P<client>[^\s@]+))?    # trentm@trentm-pliers
             ''', re.VERBOSE)
         files = []
-        for line in results["stdout"].splitlines(1):
+        for line in results["stdout"].splitlines(True):
             match = lineRe.search(line)
             if not match:
                 raise P4LibError("Internal error: 'p4 opened' regex did not "
@@ -710,7 +710,7 @@ class P4:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
         results = []
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             fileinfo = {}
             if line[-1] == '\n':
                 line = line[:-1]
@@ -764,7 +764,7 @@ class P4:
         # Output format is 'depot-file#revision - client-file'
         hits = []
         haveRe = re.compile('(.+)#(\d+) - (.+)')
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             if line[-1] == '\n':
                 line = line[:-1]
             match = haveRe.match(line)
@@ -808,7 +808,7 @@ class P4:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
         desc = {}
-        lines = output.splitlines(1)
+        lines = output.splitlines(True)
         changeRe = re.compile('^Change (?P<change>\d+) by (?P<user>[^\s@]+)@'
                               '(?P<client>[^\s@]+) on (?P<date>[\d/ :]+)$')
         desc = changeRe.match(lines[0]).groupdict()
@@ -936,7 +936,7 @@ class P4:
             if action == 'get':
                 change = parseForm(output)
             elif action in ('create', 'update', 'delete'):
-                lines = output.splitlines(1)
+                lines = output.splitlines(True)
                 resultRes = [
                     re.compile("^Change (?P<change>\d+)"
                                " (?P<action>created|updated|deleted)\.$"),
@@ -1016,7 +1016,7 @@ class P4:
             changeRe = re.compile("^Change (?P<change>\d+) on "
                                   "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
                                   "(?P<client>[^\s@]+)$")
-            for line in output.splitlines(1):
+            for line in output.splitlines(True):
                 if not line.strip():
                     continue  # skip blank lines
                 if line.startswith('\t'):
@@ -1033,7 +1033,7 @@ class P4:
                                   "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
                                   "(?P<client>[^\s@]+) (\*pending\* )?"
                                   "'(?P<description>.*?)'$")
-            for line in output.splitlines(1):
+            for line in output.splitlines(True):
                 match = changeRe.match(line)
                 if match:
                     change = match.groupdict()
@@ -1081,7 +1081,7 @@ class P4:
         hits = []
         lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
                             '(?P<comment>.+?)$')
-        for line in results["stdout"].splitlines(1):
+        for line in results["stdout"].splitlines(True):
             if line.startswith('... '):
                 note = line.split(' - ')[-1].strip()
                 hits[-1]['notes'].append(note)
@@ -1144,7 +1144,7 @@ class P4:
                             '(?P<comment>.*)$')
         line2Re = re.compile('^(?P<depotFile>.+?) - '
                              '(?P<comment>.*)$')
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             line = line.rstrip()
             if line.startswith("..."):  # this is a note for the latest hit
                 note = line.split(' - ')[-1].strip()
@@ -1205,7 +1205,7 @@ class P4:
         hits = []
         hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\d+))? - '
                            '(?P<comment>.*)$')
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             match = hitRe.match(line)
             if match:
                 hit = match.groupdict()
@@ -1248,7 +1248,7 @@ class P4:
         fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "
                             "(?P<action>\w+) change (?P<change>\d+) "
                             "\((?P<type>[\w+]+)\)$")
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             match = fileRe.match(line)
             hit = match.groupdict()
             hit['rev'] = int(hit['rev'])
@@ -1300,7 +1300,7 @@ class P4:
                            "(?P<action>\w+) on (?P<date>[\d/]+) by "
                            "(?P<user>[^\s@]+)@(?P<client>[^\s@]+) "
                            "\((?P<type>[\w+]+)\)( '(?P<description>.*?)')?$")
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             if longOutput and not line.strip():
                 continue  # skip blank lines
             elif line.startswith('//'):
@@ -1444,7 +1444,7 @@ class P4:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
         if satisfying is not None:
-            hits = [{'localFile': line[:-1]} for line in output.splitlines(1)]
+            hits = [{'localFile': line[:-1]} for line in output.splitlines(True)]
         else:
             hits = _parseDiffOutput(output)
         return hits
@@ -1556,7 +1556,7 @@ class P4:
         hits = []
         hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\w+))? - '
                            '(?P<comment>.*)$')
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             match = hitRe.match(line)
             if match:
                 hit = match.groupdict()
@@ -1666,7 +1666,7 @@ class P4:
                             '(?P<theirs>\d+) theirs \+ (?P<both>\d+) both '
                             '\+ (?P<conflicting>\d+) conflicting$')
         actionRe = re.compile('^(?P<clientFile>//.+?) - (?P<action>.+?)(\.)?$')
-        for line in results["stdout"].splitlines(1):
+        for line in results["stdout"].splitlines(True):
             match = introRe.match(line)
             if match:
                 hit = match.groupdict()
@@ -1785,7 +1785,7 @@ class P4:
             resultRe = re.compile('^Change (?P<change>\d+) '
                                   '(?P<action>submitted)\.')
             result = {'files': []}
-            for line in output.splitlines(1):
+            for line in output.splitlines(True):
                 match = fileRe.match(line)
                 if match:
                     file = match.groupdict()
@@ -1850,7 +1850,7 @@ class P4:
         hits = []
         hitRe = re.compile('^(?P<depotFile>.+?)(#(?P<rev>\d+))? - '
                            '(?P<comment>.*)$')
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             match = hitRe.match(line)
             if match:
                 hit = match.groupdict()
@@ -1938,7 +1938,7 @@ class P4:
             if action == 'get':
                 rv = parseForm(output)
             elif action in ('create/update', 'delete'):
-                lines = output.splitlines(1)
+                lines = output.splitlines(True)
                 # Example output:
                 #   Client trentm-ra not changed.
                 #   Client bertha-test deleted.
@@ -1987,7 +1987,7 @@ class P4:
                               "(?P<update>[\d/]+) "
                               "root (?P<root>.*?) '(?P<description>.*?)'$")
         clients = []
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             match = clientRe.match(line)
             if match:
                 client = match.groupdict()
@@ -2069,7 +2069,7 @@ class P4:
             if action == 'get':
                 rv = parseForm(output)
             elif action in ('create/update', 'delete'):
-                lines = output.splitlines(1)
+                lines = output.splitlines(True)
                 # Example output:
                 #   Label label_1 not changed.
                 #   Label label_2 deleted.
@@ -2115,7 +2115,7 @@ class P4:
                              "(?P<update>[\d/]+) "
                              "'(?P<description>.*?)'$")
         labels = []
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             match = labelRe.match(line)
             if match:
                 label = match.groupdict()
@@ -2174,7 +2174,7 @@ class P4:
         hits = []
         lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
                             '(?P<comment>.+?)$')
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             if line.startswith('... '):
                 note = line.split(' - ')[-1].strip()
                 hits[-1]['notes'].append(note)
@@ -2262,7 +2262,7 @@ class P4:
             if action == 'get':
                 rv = parseForm(output)
             elif action in ('create/update', 'delete'):
-                lines = output.splitlines(1)
+                lines = output.splitlines(True)
                 # Example output:
                 #   Branch trentm-ra not changed.
                 #   Branch bertha-test deleted.
@@ -2308,7 +2308,7 @@ class P4:
                               "(?P<update>[\d/]+) "
                               "'(?P<description>.*?)'$")
         branches = []
-        for line in output.splitlines(1):
+        for line in output.splitlines(True):
             match = branchRe.match(line)
             if match:
                 branch = match.groupdict()
