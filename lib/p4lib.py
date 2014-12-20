@@ -1449,7 +1449,7 @@ class P4:
             hits = _parseDiffOutput(output)
         return hits
 
-    def diff2(self, file1, file2, diffFormat='', quiet=0, text=0,
+    def diff2(self, file1, file2, diffFormat='', quiet=True, text=0,
               **p4options):
         """Compare two depot files.
         
@@ -1472,13 +1472,10 @@ class P4:
         """
         if diffFormat not in ('', 'n', 'c', 's', 'u'):
             raise P4LibError("Incorrect diff format flag: '%s'" % diffFormat)
-        optv = []
-        if diffFormat:
-            optv.append('-d%s' % diffFormat)
-        if quiet:
-            optv.append('-q')
-        if text:
-            optv.append('-t')
+
+        optv = _argumentGenerator({'-d%s': diffFormat,
+                                   '-q': quiet,
+                                   '-t': text})
 
         # There is *no* way to properly and reliably parse out multiple
         # file output without using -s or -G. Use the latter.
@@ -1521,7 +1518,7 @@ class P4:
             pass
         return diff
 
-    def revert(self, files=[], change=None, unchangedOnly=0, _raw=0,
+    def revert(self, files=[], change=None, unchangedOnly=False, _raw=0,
                **p4options):
         """Discard changes for the given opened files.
         
@@ -1540,15 +1537,13 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
-        optv = []
-        if change:
-            optv += ['-c', str(change)]
-        if unchangedOnly:
-            optv += ['-a']
         if not unchangedOnly and not files:
             raise P4LibError("Missing/wrong number of arguments.")
+
+        if isinstance(files, str):
+            files = [files]
+
+        optv = _argumentGenerator({'-c': change, '-a': unchangedOnly})
 
         argv = ['revert'] + optv + files
         output, error, retval = self._p4run(argv, **p4options)
@@ -1574,8 +1569,8 @@ class P4:
                 raise P4LibError("Internal parsing error: '%s'" % line)
         return hits
 
-    def resolve(self, files=[], autoMode='', force=0, dryrun=0,
-                text=0, verbose=0, _raw=0, **p4options):
+    def resolve(self, files=[], autoMode='', force=False, dryrun=False,
+                text=False, verbose=False, _raw=False, **p4options):
         """Merge open files with other revisions or files.
 
         This resolve, for obvious reasons, only supports the options to
@@ -1613,23 +1608,21 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        if isinstance(files, str):
-            files = [files]
-        optv = []
         if autoMode is None:
             raise P4LibError("'autoMode' must be non-None, otherwise "
                              "'p4 resolve' may initiate command line "
                              "interaction, which will hang this method.")
-        else:
-            optv += ['-a%s' % autoMode]
-        if force:
-            optv += ['-f']
-        if dryrun:
-            optv += ['-n']
-        if text:
-            optv += ['-t']
-        if verbose:
-            optv += ['-v']
+
+        if isinstance(files, str):
+            files = [files]
+
+        optv = _argumentGenerator({'-f': force,
+                                   '-n': dryrun,
+                                   '-t': text,
+                                   '-v': verbose})
+        # '-a' only is valid
+        optv = ['-a%s' % autoMode] + optv
+
         argv = ['resolve'] + optv
 
         results = {"stdout": '', "stderr": '', "retval": 0}
@@ -1842,12 +1835,12 @@ class P4:
         """
         if isinstance(files, str):
             files = [files]
-        optv = []
-        if change:
-            optv += ['-c', str(change)]
+
+        optv = _argumentGenerator({'-c': change})
 
         argv = ['delete'] + optv + files
         output, error, retval = self._p4run(argv, **p4options)
+
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
@@ -2132,7 +2125,7 @@ class P4:
                                  "'p4 labels' output line: '%s'" % line)
         return labels
 
-    def flush(self, files=[], force=0, dryrun=0, _raw=0, **p4options):
+    def flush(self, files=[], force=False, dryrun=False, _raw=False, **p4options):
         """Fake a 'sync' by not moving files.
         
         "files" is a list of files or file wildcards to flush. Defaults
@@ -2160,11 +2153,9 @@ class P4:
         """
         if isinstance(files, str):
             files = [files]
-        optv = []
-        if force:
-            optv.append('-f')
-        if dryrun:
-            optv.append('-n')
+
+        optv = _argumentGenerator({'-f': force,
+                                   '-n': dryrun})
 
         argv = ['flush'] + optv
         if files:
