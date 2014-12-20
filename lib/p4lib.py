@@ -742,7 +742,7 @@ class P4:
         if diffFormat not in ('', 'n', 'c', 's', 'u'):
             raise P4LibError("Incorrect diff format flag: '%s'" % diffFormat)
 
-        optv = _argumentGenerator({"-d%s": diffFormat, "-s": shortForm})
+        optv = _argumentGenerator({'-d%s': diffFormat, '-s': shortForm})
 
         argv = ['describe'] + optv + [str(change)]
         output, error, retval = self._p4run(argv, **p4options)
@@ -940,10 +940,10 @@ class P4:
         if isinstance(files, str):
             files = [files]
 
-        optv = _argumentGenerator({"-i": followIntegrations,
-                                   "-l": longOutput,
-                                   "-m": maximum,
-                                   "-s": status})
+        optv = _argumentGenerator({'-i': followIntegrations,
+                                   '-l': longOutput,
+                                   '-m': maximum,
+                                   '-s': status})
 
         argv = ['changes'] + optv
         if files:
@@ -987,7 +987,7 @@ class P4:
                                      "'p4 changes' output line: '%s'" % line)
         return changes
 
-    def sync(self, files=[], force=0, dryrun=0, _raw=0, **p4options):
+    def sync(self, files=[], force=False, dryrun=False, _raw=0, **p4options):
         """Synchronize the client with its view of the depot.
         
         "files" is a list of files or file wildcards to sync. Defaults
@@ -1006,11 +1006,7 @@ class P4:
         """
         if isinstance(files, str):
             files = [files]
-        optv = []
-        if force:
-            optv.append('-f')
-        if dryrun:
-            optv.append('-n')
+        optv = _argumentGenerator({'-f': force, '-n': dryrun})
 
         argv = ['sync'] + optv
         results = self._batch_run(argv, files, p4options)
@@ -1062,11 +1058,8 @@ class P4:
         """
         if isinstance(files, str):
             files = [files]
-        optv = []
-        if change:
-            optv += ['-c', str(change)]
-        if filetype:
-            optv += ['-t', filetype]
+
+        optv = _argumentGenerator({'-c': change, '-t': filetype})
         
         argv = ['edit'] + optv + files
         output, error, retval = self._p4run(argv, **p4options)
@@ -1133,11 +1126,8 @@ class P4:
         """
         if isinstance(files, str):
             files = [files]
-        optv = []
-        if change:
-            optv += ['-c', str(change)]
-        if filetype:
-            optv += ['-t', filetype]
+
+        optv = _argumentGenerator({'-c': change, '-t': filetype})
         
         argv = ['add'] + optv + files
         output, error, retval = self._p4run(argv, **p4options)
@@ -1209,7 +1199,7 @@ class P4:
             hits.append(hit)
         return hits
 
-    def filelog(self, files, followIntegrations=0, longOutput=0, maxRevs=None,
+    def filelog(self, files, followIntegrations=False, longOutput=False, maxRevs=None,
                 _raw=0, **p4options):
         """List revision histories of files.
         
@@ -1239,13 +1229,10 @@ class P4:
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
-        optv = []
-        if followIntegrations:
-            optv.append('-i')
-        if longOutput:
-            optv.append('-l')
-        if maxRevs is not None:
-            optv += ['-m', str(maxRevs)]
+        optv = _argumentGenerator({'-i': followIntegrations,
+                                   '-l': longOutput,
+                                   '-m': maxRevs})
+
         argv = ['filelog'] + optv + files
         output, error, retval = self._p4run(argv, **p4options)
         if _raw:
@@ -1283,7 +1270,7 @@ class P4:
                                  % line)
         return hits
 
-    def print_(self, files, localFile=None, quiet=0, **p4options):
+    def print_(self, files, localFile=None, quiet=False, **p4options):
         """Retrieve depot file contents.
         
         "files" is a list of files or file wildcards to print.
@@ -1302,11 +1289,8 @@ class P4:
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
-        optv = []
-        if localFile:
-            optv += ['-o', localFile]
-        if quiet:
-            optv.append('-q')
+        optv = _argumentGenerator({'-o': localFile, '-q': quiet})
+
         # There is *no* way to properly and reliably parse out multiple file
         # output without using -s or -G. Use the latter.
         if p4options:
@@ -1350,8 +1334,8 @@ class P4:
             pass
         return hits
 
-    def diff(self, files=[], diffFormat='', force=0, satisfying=None,
-             text=0, _raw=0, **p4options):
+    def diff(self, files=[], diffFormat='', force=False, satisfying=None,
+             text=False, _raw=0, **p4options):
         """Display diff of client files with depot files.
         
         "files" is a list of files or file wildcards to diff.
@@ -1389,15 +1373,11 @@ class P4:
         if satisfying is not None\
            and satisfying not in ('a', 'd', 'e', 'r'):
             raise P4LibError("Incorrect 'satisfying' flag: '%s'" % satisfying)
-        optv = []
-        if diffFormat:
-            optv.append('-d%s' % diffFormat)
-        if satisfying:
-            optv.append('-s%s' % satisfying)
-        if force:
-            optv.append('-f')
-        if text:
-            optv.append('-t')
+
+        optv = _argumentGenerator({'-d%s': diffFormat,
+                                   '-s%s': satisfying,
+                                   '-f': force,
+                                   '-t': text})
 
         # There is *no* to properly and reliably parse out multiple file
         # output without using -s or -G. Use the latter. (XXX Huh?)
