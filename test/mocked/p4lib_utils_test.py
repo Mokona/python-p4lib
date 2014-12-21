@@ -88,11 +88,6 @@ class ValuesToIntTestCase(unittest.TestCase):
                          p4lib._values_to_int({"k1": "1", "k2": "2", "k3": "3"},
                                               ["k1", "k2"]))
 
-    def test_raises_when_not_parsable(self):
-        self.assertRaises(ValueError, p4lib._values_to_int,
-                          {"k1": "str", "k2": "2", "k3": "3"},
-                          ["k1", "k2"])
-
 
 class PruneNoneValueTestCase(unittest.TestCase):
     def test_can_parse_empty_dict(self):

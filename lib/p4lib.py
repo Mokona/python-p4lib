@@ -217,22 +217,25 @@ def _removeTemporaryForm(formfile):
         os.remove(formfile)
 
 
-def _values_to_int(fileinfo, list_of_keys):
+def _values_to_int(dictionnary, list_of_keys):
     for key in list_of_keys:
-        if key in fileinfo:
-            value = fileinfo[key]
+        if key in dictionnary:
+            value = dictionnary[key]
             if value:
-                fileinfo[key] = int(value)
+                try:
+                    dictionnary[key] = int(value)
+                except ValueError:
+                    pass
 
-    return fileinfo
+    return dictionnary
 
 
-def _prune_none_values(fileinfo):
-    for key in fileinfo.keys():
-        if fileinfo[key] is None:
-            del fileinfo[key]
+def _prune_none_values(dictionnary):
+    for key in dictionnary.keys():
+        if dictionnary[key] is None:
+            del dictionnary[key]
 
-    return fileinfo
+    return dictionnary
 
 
 def _argumentGenerator(arguments):
@@ -781,7 +784,7 @@ class P4:
             match = haveRe.match(line)
             if match:
                 hit = match.groupdict()
-                hit['rev'] = int(hit['rev'])
+                hit = _values_to_int(hit, ['rev'])
                 hits.append(hit)
         return hits
 
@@ -818,11 +821,15 @@ class P4:
 
         desc = {}
         lines = output.splitlines(True)
+
         changeRe = re.compile('^Change (?P<change>\d+) by (?P<user>[^\s@]+)@'
                               '(?P<client>[^\s@]+) on (?P<date>[\d/ :]+)$')
+
         desc = changeRe.match(lines[0]).groupdict()
         desc['change'] = int(desc['change'])
+
         filesIdx = lines.index("Affected files ...\n")
+
         desc['description'] = ""
         for line in lines[2:filesIdx - 1]:
             desc['description'] += line[1:].strip()  # drop the leading \t
@@ -830,13 +837,15 @@ class P4:
             diffsIdx = len(lines)
         else:
             diffsIdx = lines.index("Differences ...\n")
-        desc['files'] = []
+
         fileRe = re.compile('^... (?P<depotFile>.+?)#(?P<rev>\d+) '
                             '(?P<action>\w+)$')
-        for line in lines[filesIdx + 2:diffsIdx - 1]:
-            fileinfo = fileRe.match(line).groupdict()
-            fileinfo['rev'] = int(fileinfo['rev'])
-            desc['files'].append(fileinfo)
+
+        all_matches = (_match_or_raise(fileRe, l, "describe")
+                       for l in lines[filesIdx + 2:diffsIdx - 1])
+        desc['files'] = [_values_to_int(match.groupdict(), ['rev'])
+                         for match in all_matches]
+
         if not shortForm:
             desc['diff'] = _parseDiffOutput(lines[diffsIdx + 2:])
         return desc
@@ -955,12 +964,12 @@ class P4:
                     # e.g., Change 1 has 1 open file(s) associated with it and
                     # can't be deleted.
                     re.compile("^Change (?P<change>\d+) (?P<comment>.+?)\.$"),
-                    ]
+                ]
                 for resultRe in resultRes:
                     match = resultRe.match(lines[0])
                     if match:
                         change = match.groupdict()
-                        change['change'] = int(change['change'])
+                        change = _values_to_int(change, ['change'])
                         break
                 else:
                     err = "Internal error: could not parse change '%s' "\
@@ -1021,6 +1030,7 @@ class P4:
             changeRe = re.compile("^Change (?P<change>\d+) on "
                                   "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
                                   "(?P<client>[^\s@]+)$")
+
             for line in output.splitlines(True):
                 if not line.strip():
                     continue  # skip blank lines
@@ -1030,7 +1040,7 @@ class P4:
                     changes[-1]['description'] += line[1:]
                 else:
                     change = changeRe.match(line).groupdict()
-                    change['change'] = int(change['change'])
+                    change = _values_to_int(change, ['change'])
                     change['description'] = ''
                     changes.append(change)
         else:
@@ -1038,15 +1048,12 @@ class P4:
                                   "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
                                   "(?P<client>[^\s@]+) (\*pending\* )?"
                                   "'(?P<description>.*?)'$")
-            for line in output.splitlines(True):
-                match = changeRe.match(line)
-                if match:
-                    change = match.groupdict()
-                    change['change'] = int(change['change'])
-                    changes.append(change)
-                else:
-                    raise P4LibError("Internal error: could not parse "
-                                     "'p4 changes' output line: '%s'" % line)
+
+            all_matches = (_match_or_raise(changeRe, l, "changes")
+                           for l in output.splitlines(True))
+            changes = [_values_to_int(match.groupdict(), ['change'])
+                       for match in all_matches]
+
         return changes
 
     def sync(self, files=[], force=False, dryrun=False, _raw=0, **p4options):
@@ -1084,20 +1091,19 @@ class P4:
         hits = []
         lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
                             '(?P<comment>.+?)$')
+
         for line in results["stdout"].splitlines(True):
             if line.startswith('... '):
                 note = line.split(' - ')[-1].strip()
                 hits[-1]['notes'].append(note)
-                continue
-            match = lineRe.match(line)
-            if match:
-                hit = match.groupdict()
-                hit['rev'] = int(hit['rev'])
-                hit['notes'] = []
-                hits.append(hit)
-                continue
-            raise P4LibError("Internal error: could not parse 'p4 sync'"
-                             "output line: '%s'" % line)
+            else:
+                match = _match_or_raise(lineRe, line, "sync")
+                if match:
+                    hit = match.groupdict()
+                    hit = _values_to_int(hit, ['rev'])
+                    hit['notes'] = []
+                    hits.append(hit)
+
         return hits
 
     def edit(self, files, change=None, filetype=None, _raw=0, **p4options):
@@ -1152,10 +1158,8 @@ class P4:
             else:
                 match = lineRe.match(line)
                 if not match:
-                    match = line2Re.match(line)
-                if not match:
-                    raise P4LibError("Internal error: could not parse "
-                                     "'p4 edit' output line: '%s'" % line)
+                    match = _match_or_raise(line2Re, line, "edit")
+
                 hit = match.groupdict()
                 if 'rev' not in hit:  # line2Re
                     hit['rev'] = None
@@ -1206,8 +1210,7 @@ class P4:
             match = hitRe.match(line)
             if match:
                 hit = match.groupdict()
-                if hit['rev'] is not None:
-                    hit['rev'] = int(hit['rev'])
+                hit = _values_to_int(hit, ['rev'])
                 hit['notes'] = []
                 hits.append(hit)
             else:
@@ -1239,16 +1242,15 @@ class P4:
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        hits = []
         fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "
                             "(?P<action>\w+) change (?P<change>\d+) "
                             "\((?P<type>[\w+]+)\)$")
-        for line in output.splitlines(True):
-            match = fileRe.match(line)
-            hit = match.groupdict()
-            hit['rev'] = int(hit['rev'])
-            hit['change'] = int(hit['change'])
-            hits.append(hit)
+
+        all_matches = (_match_or_raise(fileRe, l, "files")
+                       for l in output.splitlines(True))
+        hits = [_values_to_int(match.groupdict(), ['rev', 'change'])
+                for match in all_matches]
+
         return hits
 
     def filelog(self, files, followIntegrations=False, longOutput=False, maxRevs=None,
@@ -1304,8 +1306,7 @@ class P4:
                 match = revRe.match(line)
                 if match:
                     d = match.groupdict('')
-                    d['change'] = int(d['change'])
-                    d['rev'] = int(d['rev'])
+                    d = _values_to_int(d, ['change', 'rev'])
                     hits[-1]['revs'].append(d)
                     hits[-1]['revs'][-1]['notes'] = []
                 else:
@@ -1346,7 +1347,10 @@ class P4:
             p4optv = makeOptv(**d)
         else:
             p4optv = self._optv
-        argv = [self.p4, '-G'] + p4optv + ['print'] + optv + _normalizeFiles(files)
+
+        argv = [self.p4, '-G'] + p4optv + ['print'] + \
+            optv + _normalizeFiles(files)
+
         cmd = _joinArgv(argv)
         log.debug("popen3 '%s'..." % cmd)
         i, o, e = os.popen3(cmd)
@@ -1362,8 +1366,7 @@ class P4:
                     # Always start a new hit with an 'info' node.
                     match = fileRe.match(node['data'])
                     hit = match.groupdict()
-                    hit['change'] = int(hit['change'])
-                    hit['rev'] = int(hit['rev'])
+                    hit = _values_to_int(hit, ['change', 'rev'])
                     hits.append(hit)
                     startHitWithNextNode = 0
                 elif node['code'] == 'text':
@@ -1538,20 +1541,14 @@ class P4:
         # Example output:
         #   //depot/hello.txt#1 - was edit, reverted
         #   //depot/test_g.txt#none - was add, abandoned
-        hits = []
         hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\w+))? - '
                            '(?P<comment>.*)$')
-        for line in output.splitlines(True):
-            match = hitRe.match(line)
-            if match:
-                hit = match.groupdict()
-                try:
-                    hit['rev'] = int(hit['rev'])
-                except ValueError:
-                    pass
-                hits.append(hit)
-            else:
-                raise P4LibError("Internal parsing error: '%s'" % line)
+
+        all_matches = (_match_or_raise(hitRe, l, "revert")
+                       for l in output.splitlines(True))
+        hits = [_values_to_int(match.groupdict(), ["rev"])
+                for match in all_matches]
+
         return hits
 
     def resolve(self, files=[], autoMode='', force=False, dryrun=False,
@@ -1652,17 +1649,16 @@ class P4:
             match = introRe.match(line)
             if match:
                 hit = match.groupdict()
-                hit['rev'] = int(hit['rev'])
+                hit = _values_to_int(hit, ["rev"])
                 hits.append(hit)
                 log.info("parsed resolve 'intro' line: '%s'" % line.strip())
                 continue
             match = diffRe.match(line)
             if match:
                 diff = match.groupdict()
-                diff['yours'] = int(diff['yours'])
-                diff['theirs'] = int(diff['theirs'])
-                diff['both'] = int(diff['both'])
-                diff['conflicting'] = int(diff['conflicting'])
+                diff = _values_to_int(diff,
+                                      ["yours", "theirs",
+                                       "both", "conflicting"])
                 hits[-1]['diff chunks'] = diff
                 log.info("parsed resolve 'diff' line: '%s'" % line.strip())
                 continue
@@ -1826,20 +1822,14 @@ class P4:
         # Example output:
         #   //depot/foo.txt#1 - opened for delete
         #   //depot/foo.txt - can't delete (already opened for edit)
-        hits = []
         hitRe = re.compile('^(?P<depotFile>.+?)(#(?P<rev>\d+))? - '
                            '(?P<comment>.*)$')
-        for line in output.splitlines(True):
-            match = hitRe.match(line)
-            if match:
-                hit = match.groupdict()
-                if hit['rev'] is not None:
-                    hit['rev'] = int(hit['rev'])
-                hits.append(hit)
-            else:
-                raise P4LibError("Internal error: could not parse "
-                                 "'p4 delete' output line: '%s'. Please "
-                                 "report this to the author." % line)
+
+        all_matches = (_match_or_raise(hitRe, l, "delete")
+                       for l in output.splitlines(True))
+        hits = [_values_to_int(match.groupdict(), ["rev"])
+                for match in all_matches]
+
         return hits
 
     def client(self, name=None, client=None, delete=0, _raw=0, **p4options):
@@ -1965,15 +1955,11 @@ class P4:
         clientRe = re.compile("^Client (?P<client>[^\s@]+) "
                               "(?P<update>[\d/]+) "
                               "root (?P<root>.*?) '(?P<description>.*?)'$")
-        clients = []
-        for line in output.splitlines(True):
-            match = clientRe.match(line)
-            if match:
-                client = match.groupdict()
-                clients.append(client)
-            else:
-                raise P4LibError("Internal error: could not parse "
-                                 "'p4 clients' output line: '%s'" % line)
+
+        all_matches = (_match_or_raise(clientRe, l, "clients")
+                       for l in output.splitlines(True))
+        clients = [match.groupdict() for match in all_matches]
+
         return clients
 
     def label(self, name=None, label=None, delete=0, _raw=0, **p4options):
