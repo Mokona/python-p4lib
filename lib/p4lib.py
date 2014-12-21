@@ -2115,20 +2115,23 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def labels_parse_cb(output):
+            labelRe = re.compile("^Label (?P<label>[^\s@]+) "
+                                 "(?P<update>[\d/]+) "
+                                 "'(?P<description>.*?)'$")
+
+            all_matches = (_match_or_raise(labelRe, l, "labels")
+                           for l in output.splitlines(True))
+            labels = [match.groupdict() for match in all_matches]
+
+            return labels
+
         argv = ['labels']
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        labelRe = re.compile("^Label (?P<label>[^\s@]+) "
-                             "(?P<update>[\d/]+) "
-                             "'(?P<description>.*?)'$")
-
-        all_matches = (_match_or_raise(labelRe, l, "labels")
-                       for l in output.splitlines(True))
-        labels = [match.groupdict() for match in all_matches]
-
-        return labels
+        return self._run_and_process(argv,
+                                     labels_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def flush(self, files=[], force=False, dryrun=False, _raw=False, **p4options):
         """Fake a 'sync' by not moving files.
