@@ -1836,26 +1836,27 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def delete_parse_cb(output):
+            # Example output:
+            #   //depot/foo.txt#1 - opened for delete
+            #   //depot/foo.txt - can't delete (already opened for edit)
+            hitRe = re.compile('^(?P<depotFile>.+?)(#(?P<rev>\d+))? - '
+                               '(?P<comment>.*)$')
+
+            all_matches = (_match_or_raise(hitRe, l, "delete")
+                           for l in output.splitlines(True))
+            hits = [_values_to_int(match.groupdict(), ["rev"])
+                    for match in all_matches]
+
+            return hits
+
         optv = _argumentGenerator({'-c': change})
-
         argv = ['delete'] + optv + _normalizeFiles(files)
-        output, error, retval = self._p4run(argv, **p4options)
 
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
-
-        # Example output:
-        #   //depot/foo.txt#1 - opened for delete
-        #   //depot/foo.txt - can't delete (already opened for edit)
-        hitRe = re.compile('^(?P<depotFile>.+?)(#(?P<rev>\d+))? - '
-                           '(?P<comment>.*)$')
-
-        all_matches = (_match_or_raise(hitRe, l, "delete")
-                       for l in output.splitlines(True))
-        hits = [_values_to_int(match.groupdict(), ["rev"])
-                for match in all_matches]
-
-        return hits
+        return self._run_and_process(argv,
+                                     delete_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def client(self, name=None, client=None, delete=0, _raw=0, **p4options):
         """Create, update, delete, or get a client specification.
