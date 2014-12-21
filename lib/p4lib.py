@@ -1885,64 +1885,73 @@ class P4:
         supported. However, there is no strong need to support -t
         because the use of dictionaries in this API makes this trivial.
         """
-        formfile = None
-        try:
-            action = None  # note action to know how to parse output below
-            if delete:
-                action = "delete"
-                if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "
-                                     "specify 'name' of client to delete.")
-                argv = ['client', '-d', name]
-            elif client is None:
-                action = "get"
-                if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "
-                                     "specify 'name' of client to get.")
-                argv = ['client', '-o', name]
-            else:
-                action = "create/update"
-                if 'client' in client:
-                    name = client["client"]
-                if name is not None:
-                    cl = self.client(name=name)
-                else:
-                    cl = {}
-                cl.update(client)
-                form = makeForm(**cl)
-
-                # Build submission form file.
-                formfile = _writeTemporaryForm(form)
-                argv = ['client', '-i', '<', formfile]
+        def get_client_information(name):
+            argv = ['client', '-o', name]
 
             output, error, retval = self._p4run(argv, **p4options)
             if _raw:
                 return {'stdout': output, 'stderr': error, 'retval': retval}
 
-            if action == 'get':
-                rv = parseForm(output)
-            elif action in ('create/update', 'delete'):
-                lines = output.splitlines(True)
-                # Example output:
-                #   Client trentm-ra not changed.
-                #   Client bertha-test deleted.
-                #   Client bertha-test saved.
-                resultRe = re.compile("^Client (?P<client>[^\s@]+)"
-                                      " (?P<action>not changed|deleted|saved)\.$")
-                match = resultRe.match(lines[0])
-                if match:
-                    rv = match.groupdict()
-                else:
-                    err = "Internal error: could not parse p4 client "\
-                          "output: '%s'" % output
-                    raise P4LibError(err)
-            else:
-                raise P4LibError("Internal error: unexpected action: '%s'"
-                                 % action)
+            return parseForm(output)
 
-            return rv
-        finally:
-            _removeTemporaryForm(formfile)
+        def create_update_delete_parse_result(output):
+            lines = output.splitlines(True)
+            # Example output:
+            #   Client trentm-ra not changed.
+            #   Client bertha-test deleted.
+            #   Client bertha-test saved.
+            resultRe = re.compile("^Client (?P<client>[^\s@]+)"
+                                  " (?P<action>not changed|deleted|saved)\.$")
+
+            match = _match_or_raise(resultRe, lines[0], "client")
+            return match.groupdict()
+
+        def create_update_client(name, client):
+            if 'client' in client:
+                name = client["client"]
+            if name is not None:
+                cl = self.client(name=name)
+            else:
+                cl = {}
+            cl.update(client)
+            form = makeForm(**cl)
+
+            try:
+                # Build submission form file.
+                formfile = _writeTemporaryForm(form)
+                argv = ['client', '-i', '<', formfile]
+
+                output, error, retval = self._p4run(argv, **p4options)
+
+            finally:
+                _removeTemporaryForm(formfile)
+
+            if _raw:
+                return {'stdout': output, 'stderr': error, 'retval': retval}
+
+            return create_update_delete_parse_result(output)
+
+        def delete_client(name):
+            argv = ['client', '-d', name]
+
+            output, error, retval = self._p4run(argv, **p4options)
+            if _raw:
+                return {'stdout': output, 'stderr': error, 'retval': retval}
+
+            return create_update_delete_parse_result(output)
+
+        if delete:
+            if name is None:
+                raise P4LibError("Incomplete/missing arguments: must "
+                                 "specify 'name' of client to delete.")
+            return delete_client(name)
+        elif client is None:
+            if name is None:
+                raise P4LibError("Incomplete/missing arguments: must "
+                                 "specify 'name' of client to get.")
+            return get_client_information(name)
+        else:
+            return create_update_client(name, client)
 
     def clients(self, _raw=0, **p4options):
         """Return a list of clients.
