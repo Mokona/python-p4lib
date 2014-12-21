@@ -779,25 +779,26 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def have_result_cb(output):
+            # Output format is 'depot-file#revision - client-file'
+            haveRe = re.compile('(?P<depotFile>.+)#(?P<rev>\d+)'
+                                ' - (?P<localFile>.+)')
+
+            all_matches = (_match_or_raise(haveRe, _rstriponce(l), "have")
+                           for l in output.splitlines(True))
+            hits = [_values_to_int(match.groupdict(), ['rev'])
+                    for match in all_matches]
+
+            return hits
+
         argv = ['have']
         if files:
             argv += _normalizeFiles(files)
 
-        output, error, retval = self._p4run(argv, **p4options)
-
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
-
-        # Output format is 'depot-file#revision - client-file'
-        haveRe = re.compile('(?P<depotFile>.+)#(?P<rev>\d+)'
-                            ' - (?P<localFile>.+)')
-
-        all_matches = (_match_or_raise(haveRe, _rstriponce(l), "have")
-                       for l in output.splitlines(True))
-        hits = [_values_to_int(match.groupdict(), ['rev'])
-                for match in all_matches]
-
-        return hits
+        return self._run_and_process(argv,
+                                     have_result_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def describe(self, change, diffFormat='', shortForm=False, _raw=False,
                  **p4options):
@@ -819,47 +820,48 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def describe_result_cb(output):
+            desc = {}
+            lines = output.splitlines(True)
+
+            changeRe = re.compile('^Change (?P<change>\d+) by (?P<user>[^\s@]+)@'
+                                  '(?P<client>[^\s@]+) on (?P<date>[\d/ :]+)$')
+
+            desc = changeRe.match(lines[0]).groupdict()
+            desc['change'] = int(desc['change'])
+
+            filesIdx = lines.index("Affected files ...\n")
+
+            desc['description'] = ""
+            for line in lines[2:filesIdx - 1]:
+                desc['description'] += line[1:].strip()  # drop the leading \t
+            if shortForm:
+                diffsIdx = len(lines)
+            else:
+                diffsIdx = lines.index("Differences ...\n")
+
+            fileRe = re.compile('^... (?P<depotFile>.+?)#(?P<rev>\d+) '
+                                '(?P<action>\w+)$')
+
+            all_matches = (_match_or_raise(fileRe, l, "describe")
+                           for l in lines[filesIdx + 2:diffsIdx - 1])
+            desc['files'] = [_values_to_int(match.groupdict(), ['rev'])
+                             for match in all_matches]
+
+            if not shortForm:
+                desc['diff'] = _parseDiffOutput(lines[diffsIdx + 2:])
+            return desc
+
         if diffFormat not in ('', 'n', 'c', 's', 'u'):
             raise P4LibError("Incorrect diff format flag: '%s'" % diffFormat)
 
         optv = _argumentGenerator({'-d%s': diffFormat, '-s': shortForm})
-
         argv = ['describe'] + optv + [str(change)]
-        output, error, retval = self._p4run(argv, **p4options)
 
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
-
-        desc = {}
-        lines = output.splitlines(True)
-
-        changeRe = re.compile('^Change (?P<change>\d+) by (?P<user>[^\s@]+)@'
-                              '(?P<client>[^\s@]+) on (?P<date>[\d/ :]+)$')
-
-        desc = changeRe.match(lines[0]).groupdict()
-        desc['change'] = int(desc['change'])
-
-        filesIdx = lines.index("Affected files ...\n")
-
-        desc['description'] = ""
-        for line in lines[2:filesIdx - 1]:
-            desc['description'] += line[1:].strip()  # drop the leading \t
-        if shortForm:
-            diffsIdx = len(lines)
-        else:
-            diffsIdx = lines.index("Differences ...\n")
-
-        fileRe = re.compile('^... (?P<depotFile>.+?)#(?P<rev>\d+) '
-                            '(?P<action>\w+)$')
-
-        all_matches = (_match_or_raise(fileRe, l, "describe")
-                       for l in lines[filesIdx + 2:diffsIdx - 1])
-        desc['files'] = [_values_to_int(match.groupdict(), ['rev'])
-                         for match in all_matches]
-
-        if not shortForm:
-            desc['diff'] = _parseDiffOutput(lines[diffsIdx + 2:])
-        return desc
+        return self._run_and_process(argv,
+                                     describe_result_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def change(self, files=None, description=None, change=None, delete=0,
                _raw=0, **p4options):
@@ -902,11 +904,10 @@ class P4:
         def get_change_information(change):
             argv = ['change', '-o', str(change)]
 
-            output, error, retval = self._p4run(argv, **p4options)
-            if _raw:
-                return {'stdout': output, 'stderr': error, 'retval': retval}
-
-            return parseForm(output)
+            return self._run_and_process(argv,
+                                         lambda output: parseForm(output),
+                                         raw=_raw,
+                                         **p4options)
 
         def create_update_delete_parse_result(output):
             lines = output.splitlines(True)
@@ -939,14 +940,12 @@ class P4:
                 formfile = _writeTemporaryForm(form)
                 argv = ['change', '-i', '<', formfile]
 
-                output, error, retval = self._p4run(argv, **p4options)
+                return self._run_and_process(argv,
+                                             create_update_delete_parse_result,
+                                             raw=_raw,
+                                             **p4options)
             finally:
                 _removeTemporaryForm(formfile)
-
-            if _raw:
-                return {'stdout': output, 'stderr': error, 'retval': retval}
-
-            return create_update_delete_parse_result(output)
 
         def create_change(change, files):
             # Empty 'files' should default to all opened files in the
@@ -987,11 +986,10 @@ class P4:
         def delete_change(change):
             argv = ['change', '-d', str(change)]
 
-            output, error, retval = self._p4run(argv, **p4options)
-            if _raw:
-                return {'stdout': output, 'stderr': error, 'retval': retval}
-
-            return create_update_delete_parse_result(output)
+            return self._run_and_process(argv,
+                                         create_update_delete_parse_result,
+                                         raw=_raw,
+                                         **p4options)
 
         files = _normalizeFiles(files)
 
@@ -1034,6 +1032,38 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def changes_parse_cb(output):
+            changes = []
+            if longOutput:
+                changeRe = re.compile("^Change (?P<change>\d+) on "
+                                      "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
+                                      "(?P<client>[^\s@]+)$")
+
+                for line in output.splitlines(True):
+                    if not line.strip():
+                        continue  # skip blank lines
+                    if line.startswith('\t'):
+                        # Append this line (minus leading tab) to last
+                        # change's description.
+                        changes[-1]['description'] += line[1:]
+                    else:
+                        change = changeRe.match(line).groupdict()
+                        change = _values_to_int(change, ['change'])
+                        change['description'] = ''
+                        changes.append(change)
+            else:
+                changeRe = re.compile("^Change (?P<change>\d+) on "
+                                      "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
+                                      "(?P<client>[^\s@]+) (\*pending\* )?"
+                                      "'(?P<description>.*?)'$")
+
+                all_matches = (_match_or_raise(changeRe, l, "changes")
+                               for l in output.splitlines(True))
+                changes = [_values_to_int(match.groupdict(), ['change'])
+                           for match in all_matches]
+
+            return changes
+
         if maximum is not None and not isinstance(maximum, int):
             raise P4LibError("Incorrect 'maximum' value. It must be an integer: "
                              "'%s' (type '%s')" % (maximum, type(maximum)))
@@ -1049,41 +1079,10 @@ class P4:
         if files:
             argv += _normalizeFiles(files)
 
-        output, error, retval = self._p4run(argv, **p4options)
-
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
-
-        changes = []
-        if longOutput:
-            changeRe = re.compile("^Change (?P<change>\d+) on "
-                                  "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
-                                  "(?P<client>[^\s@]+)$")
-
-            for line in output.splitlines(True):
-                if not line.strip():
-                    continue  # skip blank lines
-                if line.startswith('\t'):
-                    # Append this line (minus leading tab) to last
-                    # change's description.
-                    changes[-1]['description'] += line[1:]
-                else:
-                    change = changeRe.match(line).groupdict()
-                    change = _values_to_int(change, ['change'])
-                    change['description'] = ''
-                    changes.append(change)
-        else:
-            changeRe = re.compile("^Change (?P<change>\d+) on "
-                                  "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
-                                  "(?P<client>[^\s@]+) (\*pending\* )?"
-                                  "'(?P<description>.*?)'$")
-
-            all_matches = (_match_or_raise(changeRe, l, "changes")
-                           for l in output.splitlines(True))
-            changes = [_values_to_int(match.groupdict(), ['change'])
-                       for match in all_matches]
-
-        return changes
+        return self._run_and_process(argv,
+                                     changes_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def sync(self, files=[], force=False, dryrun=False, _raw=0, **p4options):
         """Synchronize the client with its view of the depot.
