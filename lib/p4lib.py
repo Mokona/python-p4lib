@@ -2156,6 +2156,30 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def flush_parse_cb(output):
+            # Forms of output:
+            #    //depot/foo#1 - updating C:\foo
+            #    //depot/foo#1 - is opened and not being changed
+            #    //depot/foo#1 - is opened at a later revision - not changed
+            #    //depot/foo#1 - deleted as C:\foo
+            #    ... //depot/foo - must resolve #2 before submitting
+            # There are probably others forms.
+            hits = []
+            lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
+                                '(?P<comment>.+?)$')
+            for line in output.splitlines(True):
+                if line.startswith('... '):
+                    note = line.split(' - ')[-1].strip()
+                    hits[-1]['notes'].append(note)
+                else:
+                    match = _match_or_raise(lineRe, line, "flush")
+                    hit = match.groupdict()
+                    hit = _values_to_int(hit, ['rev'])
+                    hit['notes'] = []
+                    hits.append(hit)
+
+            return hits
+
         optv = _argumentGenerator({'-f': force,
                                    '-n': dryrun})
 
@@ -2163,32 +2187,10 @@ class P4:
         if files:
             argv += _normalizeFiles(files)
 
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
-
-        # Forms of output:
-        #    //depot/foo#1 - updating C:\foo
-        #    //depot/foo#1 - is opened and not being changed
-        #    //depot/foo#1 - is opened at a later revision - not changed
-        #    //depot/foo#1 - deleted as C:\foo
-        #    ... //depot/foo - must resolve #2 before submitting
-        # There are probably others forms.
-        hits = []
-        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
-                            '(?P<comment>.+?)$')
-        for line in output.splitlines(True):
-            if line.startswith('... '):
-                note = line.split(' - ')[-1].strip()
-                hits[-1]['notes'].append(note)
-            else:
-                match = _match_or_raise(lineRe, line, "flush")
-                hit = match.groupdict()
-                hit = _values_to_int(hit, ['rev'])
-                hit['notes'] = []
-                hits.append(hit)
-
-        return hits
+        return self._run_and_process(argv,
+                                     flush_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def branch(self, name=None, branch=None, delete=0, _raw=0, **p4options):
         r"""Create, update, delete, or get a branch specification.
