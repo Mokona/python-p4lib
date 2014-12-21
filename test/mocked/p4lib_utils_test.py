@@ -1,6 +1,7 @@
 import unittest
 from mock import MagicMock
 import p4lib
+import re
 
 
 def list_to_dict(l):
@@ -208,3 +209,16 @@ class NormalizeFilesTestCase(unittest.TestCase):
     def test_returns_a_list_when_given_a_file(self):
         result = p4lib._normalizeFiles("file.cpp")
         self.assertEqual(["file.cpp"], result)
+
+
+class MatchOrRaiseTestCase(unittest.TestCase):
+    def test_returns_the_match_if_matched(self):
+        regex = re.compile(r"(?P<capture>.{2}).*")
+        result = p4lib._match_or_raise(regex, "abcd", "")
+        self.assertIsNotNone(result)
+        self.assertEqual("ab", result.groupdict()["capture"])
+
+    def test_raises_if_match_failed(self):
+        regex = re.compile(r"(?P<capture>.{5})")
+        self.assertRaises(p4lib.P4LibError,
+                          p4lib._match_or_raise, regex, "abcd", "")

@@ -317,6 +317,14 @@ def _parseDiffOutput(output):
     return hits
 
 
+def _match_or_raise(regex, line, command_msg):
+    m = regex.match(line)
+    if not m:
+        raise P4LibError("Internal error: could not parse "
+                         "'p4 %s' output line: '%s'" % (command_msg, line))
+    return m
+
+
 #---- public stuff
 
 
@@ -2086,14 +2094,8 @@ class P4:
                              "(?P<update>[\d/]+) "
                              "'(?P<description>.*?)'$")
 
-        def match_or_raises(line):
-            match = labelRe.match(line)
-            if not match:
-                raise P4LibError("Internal error: could not parse "
-                                 "'p4 labels' output line: '%s'" % line)
-            return match
-
-        all_matches = (match_or_raises(l) for l in output.splitlines(True))
+        all_matches = (_match_or_raise(labelRe, l, "labels")
+                       for l in output.splitlines(True))
         labels = [match.groupdict() for match in all_matches]
 
         return labels
@@ -2292,14 +2294,8 @@ class P4:
                               "(?P<update>[\d/]+) "
                               "'(?P<description>.*?)'$")
 
-        def match_or_raises(line):
-            match = branchRe.match(line)
-            if not match:
-                raise P4LibError("Internal error: could not parse "
-                                 "'p4 branches' output line: '%s'" % line)
-            return match
-
-        all_matches = (match_or_raises(l) for l in output.splitlines(True))
+        all_matches = (_match_or_raise(branchRe, l, "branches")
+                       for l in output.splitlines(True))
         branches = [match.groupdict() for match in all_matches]
 
         return branches
