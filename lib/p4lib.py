@@ -2193,64 +2193,77 @@ class P4:
         supported. However, there is no strong need to support -t
         because the use of dictionaries in this API makes this trivial.
         """
-        formfile = None
-        try:
-            action = None  # note action to know how to parse output below
-            if delete:
-                action = "delete"
-                if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "
-                                     "specify 'name' of branch to delete.")
-                argv = ['branch', '-d', name]
-            elif branch is None:
-                action = "get"
-                if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "
-                                     "specify 'name' of branch to get.")
-                argv = ['branch', '-o', name]
+        def delete_create_update_result(output):
+            lines = output.splitlines(True)
+            # Example output:
+            #   Branch trentm-ra not changed.
+            #   Branch bertha-test deleted.
+            #   Branch bertha-test saved.
+            resultRe = re.compile("^Branch (?P<branch>[^\s@]+)"
+                                  " (?P<action>not changed|deleted|saved)\.$")
+            match = resultRe.match(lines[0])
+            if match:
+                rv = match.groupdict()
             else:
-                action = "create/update"
-                if 'branch' in branch:
-                    name = branch["branch"]
-                if name is not None:
-                    br = self.branch(name=name)
-                else:
-                    br = {}
-                br.update(branch)
-                form = makeForm(**br)
+                err = "Internal error: could not parse p4 branch "\
+                      "output: '%s'" % output
+                raise P4LibError(err)
 
-                # Build submission form file.
-                formfile = _writeTemporaryForm(form)
-                argv = ['branch', '-i', '<', formfile]
+            return rv
+
+        def get_branch_info(name):
+            argv = ['branch', '-o', name]
 
             output, error, retval = self._p4run(argv, **p4options)
             if _raw:
                 return {'stdout': output, 'stderr': error, 'retval': retval}
 
-            if action == 'get':
-                rv = parseForm(output)
-            elif action in ('create/update', 'delete'):
-                lines = output.splitlines(True)
-                # Example output:
-                #   Branch trentm-ra not changed.
-                #   Branch bertha-test deleted.
-                #   Branch bertha-test saved.
-                resultRe = re.compile("^Branch (?P<branch>[^\s@]+)"
-                                      " (?P<action>not changed|deleted|saved)\.$")
-                match = resultRe.match(lines[0])
-                if match:
-                    rv = match.groupdict()
-                else:
-                    err = "Internal error: could not parse p4 branch "\
-                          "output: '%s'" % output
-                    raise P4LibError(err)
-            else:
-                raise P4LibError("Internal error: unexpected action: '%s'"
-                                 % action)
+            return parseForm(output)
 
-            return rv
-        finally:
-            _removeTemporaryForm(formfile)
+        def delete_branch(name):
+            argv = ['branch', '-d', name]
+
+            output, error, retval = self._p4run(argv, **p4options)
+            if _raw:
+                return {'stdout': output, 'stderr': error, 'retval': retval}
+
+            return delete_create_update_result(output)
+
+        def create_update_branch(name, branch):
+            if 'branch' in branch:
+                name = branch["branch"]
+            if name is not None:
+                br = self.branch(name=name)
+            else:
+                br = {}
+            br.update(branch)
+            form = makeForm(**br)
+
+            try:
+                formfile = _writeTemporaryForm(form)
+                argv = ['branch', '-i', '<', formfile]
+
+                output, error, retval = self._p4run(argv, **p4options)
+            finally:
+                _removeTemporaryForm(formfile)
+
+            if _raw:
+                return {'stdout': output, 'stderr': error, 'retval': retval}
+
+            return delete_create_update_result(output)
+
+        if delete:
+            if name is None:
+                raise P4LibError("Incomplete/missing arguments: must "
+                                 "specify 'name' of branch to delete.")
+            return delete_branch(name)
+        elif branch is None:
+            if name is None:
+                raise P4LibError("Incomplete/missing arguments: must "
+                                 "specify 'name' of branch to get.")
+            return get_branch_info(name)
+        else:
+            return create_update_branch(name, branch)
 
     def branches(self, _raw=0, **p4options):
         """Return a list of branches.
