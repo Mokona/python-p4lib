@@ -1,6 +1,6 @@
 import unittest
 import p4lib
-from mock import Mock
+from unittest.mock import Mock
 from test_utils import change_stdout
 from test_utils import test_options, test_raw_result
 

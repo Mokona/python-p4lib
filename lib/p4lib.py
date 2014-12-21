@@ -49,6 +49,7 @@ import marshal
 import getopt
 import tempfile
 import copy
+from functools import cmp_to_key
 
 #---- exceptions
 
@@ -189,20 +190,6 @@ def _run(argv):
     return output, error, retval
 
 
-def _specialsLast(a, b, specials):
-    """A cmp-like function, sorting in alphabetical order with
-    'special's last.
-    """
-    if a in specials and b in specials:
-        return cmp(a, b)
-    elif a in specials:
-        return 1
-    elif b in specials:
-        return -1
-    else:
-        return cmp(a, b)
-
-
 def _writeTemporaryForm(form):
     formfile = tempfile.mktemp()
     fout = open(formfile, 'w')
@@ -231,11 +218,8 @@ def _values_to_int(dictionnary, list_of_keys):
 
 
 def _prune_none_values(dictionnary):
-    for key in dictionnary.keys():
-        if dictionnary[key] is None:
-            del dictionnary[key]
-
-    return dictionnary
+    result = {k: v for k, v in dictionnary.items() if v}
+    return result
 
 
 def _argumentGenerator(arguments):
@@ -370,8 +354,14 @@ def makeForm(**kwargs):
     # Create the form
     form = ''
     specials = ['differences']
+
+    def specials_key(key):
+        if key in specials:
+            return 'z' + key
+        return key
+
     keys = kwargs.keys()
-    keys.sort(lambda a, b, s=specials: _specialsLast(a, b, s))
+    keys = sorted(keys, key=specials_key)
 
     for key in keys:
         value = kwargs[key]

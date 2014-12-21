@@ -1,5 +1,5 @@
 import unittest
-from mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock
 import p4lib
 import re
 
