@@ -933,7 +933,6 @@ class P4:
 
             return create_update_delete_parse_result(output)
 
-
         def create_change(change, files):
             # Empty 'files' should default to all opened files in the
             # 'default' changelist.
@@ -1318,14 +1317,11 @@ class P4:
             elif line.startswith('... ... '):
                 hits[-1]['revs'][-1]['notes'].append(line[8:].strip())
             elif line.startswith('... '):
-                match = revRe.match(line)
-                if match:
-                    d = match.groupdict('')
-                    d = _values_to_int(d, ['change', 'rev'])
-                    hits[-1]['revs'].append(d)
-                    hits[-1]['revs'][-1]['notes'] = []
-                else:
-                    raise P4LibError("Internal parsing error: '%s'" % line)
+                match = _match_or_raise(revRe, line, "filelog/Internal")
+                d = match.groupdict('')
+                d = _values_to_int(d, ['change', 'rev'])
+                hits[-1]['revs'].append(d)
+                hits[-1]['revs'][-1]['notes'] = []
             elif longOutput and line.startswith('\t'):
                 # Append this line (minus leading tab) to last hit's
                 # last rev's description.
@@ -2171,16 +2167,13 @@ class P4:
             if line.startswith('... '):
                 note = line.split(' - ')[-1].strip()
                 hits[-1]['notes'].append(note)
-                continue
-            match = lineRe.match(line)
-            if match:
+            else:
+                match = _match_or_raise(lineRe, line, "flush")
                 hit = match.groupdict()
-                hit['rev'] = int(hit['rev'])
+                hit = _values_to_int(hit, ['rev'])
                 hit['notes'] = []
                 hits.append(hit)
-                continue
-            raise P4LibError("Internal error: could not parse 'p4 flush'"
-                             "output line: '%s'" % line)
+
         return hits
 
     def branch(self, name=None, branch=None, delete=0, _raw=0, **p4options):
@@ -2226,15 +2219,9 @@ class P4:
             #   Branch bertha-test saved.
             resultRe = re.compile("^Branch (?P<branch>[^\s@]+)"
                                   " (?P<action>not changed|deleted|saved)\.$")
-            match = resultRe.match(lines[0])
-            if match:
-                rv = match.groupdict()
-            else:
-                err = "Internal error: could not parse p4 branch "\
-                      "output: '%s'" % output
-                raise P4LibError(err)
 
-            return rv
+            match = _match_or_raise(resultRe, lines[0], 'branch')
+            return match.groupdict()
 
         def get_branch_info(name):
             argv = ['branch', '-o', name]
