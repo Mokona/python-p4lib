@@ -2240,20 +2240,18 @@ class P4:
         def get_branch_info(name):
             argv = ['branch', '-o', name]
 
-            output, error, retval = self._p4run(argv, **p4options)
-            if _raw:
-                return {'stdout': output, 'stderr': error, 'retval': retval}
-
-            return parseForm(output)
+            return self._run_and_process(argv,
+                                         parseForm,
+                                         raw=_raw,
+                                         **p4options)
 
         def delete_branch(name):
             argv = ['branch', '-d', name]
 
-            output, error, retval = self._p4run(argv, **p4options)
-            if _raw:
-                return {'stdout': output, 'stderr': error, 'retval': retval}
-
-            return delete_create_update_result(output)
+            return self._run_and_process(argv,
+                                         delete_create_update_result,
+                                         raw=_raw,
+                                         **p4options)
 
         def create_update_branch(name, branch):
             if 'branch' in branch:
