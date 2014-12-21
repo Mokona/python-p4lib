@@ -614,6 +614,15 @@ class P4:
         argv = [self.p4] + p4optv + argv
         return _run(argv)
 
+    def _run_and_process(self, argv, process_callback,
+                         raw, **p4options):
+        output, error, retval = self._p4run(argv, **p4options)
+
+        if raw:
+            return {'stdout': output, 'stderr': error, 'retval': retval}
+
+        return process_callback(output)
+
     def _batch_run(self, argv, files, p4options):
         SET_SIZE = 10
 
@@ -714,39 +723,41 @@ class P4:
         #  //depot/foo/%1 //trentm-ra/foo/%1 c:\trentm\foo\%1
         # The last one is surprising. It comes from using '*' in the
         # client spec.
+        def where_result_cb(output):
+            results = []
+            for line in output.splitlines(True):
+                fileinfo = {}
+                line = _rstriponce(line)
+                if line.startswith('-'):
+                    fileinfo['minus'] = 1
+                    line = line[1:]
+                else:
+                    fileinfo['minus'] = 0
+                depotStart = line.find('//')
+                clientStart = line.find('//', depotStart + 2)
+                fileinfo['depotFile'] = line[depotStart:clientStart - 1]
+                if sys.platform.startswith('win'):
+                    assert ':' not in fileinfo['depotFile'],\
+                           "Current parsing cannot handle this line '%s'." %\
+                           line
+                    localStart = line.find(':', clientStart + 2) - 1
+                else:
+                    assert fileinfo['depotFile'].find(' /') == -1,\
+                        "Current parsing cannot handle this line '%s'." % line
+                    localStart = line.find(' /', clientStart + 2) + 1
+                fileinfo['clientFile'] = line[clientStart:localStart - 1]
+                fileinfo['localFile'] = line[localStart:]
+                results.append(fileinfo)
+            return results
+
         argv = ['where']
         if files:
             argv += _normalizeFiles(files)
 
-        output, error, retval = self._p4run(argv, **p4options)
-
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
-
-        results = []
-        for line in output.splitlines(True):
-            fileinfo = {}
-            line = _rstriponce(line)
-            if line.startswith('-'):
-                fileinfo['minus'] = 1
-                line = line[1:]
-            else:
-                fileinfo['minus'] = 0
-            depotFileStart = line.find('//')
-            clientFileStart = line.find('//', depotFileStart + 2)
-            fileinfo['depotFile'] = line[depotFileStart:clientFileStart - 1]
-            if sys.platform.startswith('win'):
-                assert ':' not in fileinfo['depotFile'],\
-                       "Current parsing cannot handle this line '%s'." % line
-                localFileStart = line.find(':', clientFileStart + 2) - 1
-            else:
-                assert fileinfo['depotFile'].find(' /') == -1,\
-                    "Current parsing cannot handle this line '%s'." % line
-                localFileStart = line.find(' /', clientFileStart + 2) + 1
-            fileinfo['clientFile'] = line[clientFileStart:localFileStart - 1]
-            fileinfo['localFile'] = line[localFileStart:]
-            results.append(fileinfo)
-        return results
+        return self._run_and_process(argv,
+                                     where_result_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def have(self, files=[], _raw=0, **p4options):
         """Get list of file revisions last synced.

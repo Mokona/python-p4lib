@@ -1,5 +1,5 @@
 import unittest
-from mock import MagicMock
+from mock import MagicMock, Mock
 import p4lib
 import re
 
@@ -226,3 +226,48 @@ class RStripOnceTestCase(unittest.TestCase):
 
     def test_accepts_empty_strings(self):
         self.assertEqual("", p4lib._rstriponce(""))
+
+
+class RunAndProcessOutput(unittest.TestCase):
+    CALLBACK_RESULT = "result"
+
+    def setUp(self):
+        RUN_RESULT = ("output", "", 0)
+
+        self.p4 = p4lib.P4()
+        p4lib._run = Mock(spec='p4lib._run', return_value=RUN_RESULT)
+        self.process_callback = MagicMock(return_value=self.CALLBACK_RESULT)
+
+    def test_calls_p4run(self):
+        argv = ['command', 'arg1']
+
+        self.p4._run_and_process(argv,
+                                 self.process_callback,
+                                 False,
+                                 user="value1")
+
+        p4lib._run.assert_called_with(['p4', '-u', 'value1',
+                                       'command', 'arg1'])
+
+    def test_calls_the_callback_with_output(self):
+
+        argv = ['command', 'arg1']
+
+        result = self.p4._run_and_process(argv,
+                                          self.process_callback,
+                                          False,
+                                          user="value1")
+
+        self.process_callback.assert_called_with("output")
+        self.assertEqual(self.CALLBACK_RESULT, result)
+
+    def test_returns_raw_if_specified(self):
+        argv = ['command', 'arg1']
+
+        result = self.p4._run_and_process(argv,
+                                          self.process_callback,
+                                          True)
+
+        self.assertEqual({"stdout": "output",
+                          "stderr": "",
+                          "retval": 0}, result)
