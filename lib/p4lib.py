@@ -679,12 +679,7 @@ class P4:
             ''', re.VERBOSE)
         files = []
         for line in results["stdout"].splitlines(True):
-            match = lineRe.search(line)
-            if not match:
-                raise P4LibError("Internal error: 'p4 opened' regex did not "
-                                 "match '%s'. Please report this to the "
-                                 "author." % line)
-
+            match = _match_or_raise(lineRe, line, "opened")
             fileinfo = match.groupdict()
             fileinfo = _values_to_int(fileinfo, ['rev', 'change'])
 
@@ -731,8 +726,7 @@ class P4:
         results = []
         for line in output.splitlines(True):
             fileinfo = {}
-            if line[-1] == '\n':
-                line = line[:-1]
+            line = _rstriponce(line)
             if line.startswith('-'):
                 fileinfo['minus'] = 1
                 line = line[1:]
@@ -780,16 +774,14 @@ class P4:
             return {'stdout': output, 'stderr': error, 'retval': retval}
 
         # Output format is 'depot-file#revision - client-file'
-        hits = []
         haveRe = re.compile('(?P<depotFile>.+)#(?P<rev>\d+)'
                             ' - (?P<localFile>.+)')
-        for line in output.splitlines(True):
-            line = _rstriponce(line)
-            match = haveRe.match(line)
-            if match:
-                hit = match.groupdict()
-                hit = _values_to_int(hit, ['rev'])
-                hits.append(hit)
+
+        all_matches = (_match_or_raise(haveRe, _rstriponce(l), "have")
+                       for l in output.splitlines(True))
+        hits = [_values_to_int(match.groupdict(), ['rev'])
+                for match in all_matches]
+
         return hits
 
     def describe(self, change, diffFormat='', shortForm=False, _raw=False,
