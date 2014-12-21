@@ -1301,6 +1301,35 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def filelog_parse_cb(output):
+            hits = []
+            revRe = re.compile("^... #(?P<rev>\d+) change (?P<change>\d+) "
+                               "(?P<action>\w+) on (?P<date>[\d/]+) by "
+                               "(?P<user>[^\s@]+)@(?P<client>[^\s@]+) "
+                               "\((?P<type>[\w+]+)\)( '(?P<description>.*?)')?$")
+            for line in output.splitlines(True):
+                if longOutput and not line.strip():
+                    continue  # skip blank lines
+                elif line.startswith('//'):
+                    hit = {'depotFile': line.strip(), 'revs': []}
+                    hits.append(hit)
+                elif line.startswith('... ... '):
+                    hits[-1]['revs'][-1]['notes'].append(line[8:].strip())
+                elif line.startswith('... '):
+                    match = _match_or_raise(revRe, line, "filelog/Internal")
+                    d = match.groupdict('')
+                    d = _values_to_int(d, ['change', 'rev'])
+                    hits[-1]['revs'].append(d)
+                    hits[-1]['revs'][-1]['notes'] = []
+                elif longOutput and line.startswith('\t'):
+                    # Append this line (minus leading tab) to last hit's
+                    # last rev's description.
+                    hits[-1]['revs'][-1]['description'] += line[1:]
+                else:
+                    raise P4LibError("Unexpected 'p4 filelog' output: '%s'"
+                                     % line)
+            return hits
+
         if maxRevs is not None and not isinstance(maxRevs, int):
             raise P4LibError("Incorrect 'maxRevs' value. It must be an "
                              "integer: '%s' (type '%s')"
@@ -1311,39 +1340,12 @@ class P4:
         optv = _argumentGenerator({'-i': followIntegrations,
                                    '-l': longOutput,
                                    '-m': maxRevs})
-
         argv = ['filelog'] + optv + _normalizeFiles(files)
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        hits = []
-        revRe = re.compile("^... #(?P<rev>\d+) change (?P<change>\d+) "
-                           "(?P<action>\w+) on (?P<date>[\d/]+) by "
-                           "(?P<user>[^\s@]+)@(?P<client>[^\s@]+) "
-                           "\((?P<type>[\w+]+)\)( '(?P<description>.*?)')?$")
-        for line in output.splitlines(True):
-            if longOutput and not line.strip():
-                continue  # skip blank lines
-            elif line.startswith('//'):
-                hit = {'depotFile': line.strip(), 'revs': []}
-                hits.append(hit)
-            elif line.startswith('... ... '):
-                hits[-1]['revs'][-1]['notes'].append(line[8:].strip())
-            elif line.startswith('... '):
-                match = _match_or_raise(revRe, line, "filelog/Internal")
-                d = match.groupdict('')
-                d = _values_to_int(d, ['change', 'rev'])
-                hits[-1]['revs'].append(d)
-                hits[-1]['revs'][-1]['notes'] = []
-            elif longOutput and line.startswith('\t'):
-                # Append this line (minus leading tab) to last hit's
-                # last rev's description.
-                hits[-1]['revs'][-1]['description'] += line[1:]
-            else:
-                raise P4LibError("Unexpected 'p4 filelog' output: '%s'"
-                                 % line)
-        return hits
+        return self._run_and_process(argv,
+                                     filelog_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def print_(self, files, localFile=None, quiet=False, **p4options):
         """Retrieve depot file contents.
