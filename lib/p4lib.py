@@ -1262,24 +1262,28 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def files_parse_cb(output):
+            fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "
+                                "(?P<action>\w+) change (?P<change>\d+) "
+                                "\((?P<type>[\w+]+)\)$")
+
+            all_matches = (_match_or_raise(fileRe, l, "files")
+                           for l in output.splitlines(True))
+            hits = [_values_to_int(match.groupdict(), ['rev', 'change'])
+                    for match in all_matches]
+
+            return hits
+
         if not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
         argv = ['files'] + _normalizeFiles(files)
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "
-                            "(?P<action>\w+) change (?P<change>\d+) "
-                            "\((?P<type>[\w+]+)\)$")
+        return self._run_and_process(argv,
+                                     files_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
-        all_matches = (_match_or_raise(fileRe, l, "files")
-                       for l in output.splitlines(True))
-        hits = [_values_to_int(match.groupdict(), ['rev', 'change'])
-                for match in all_matches]
-
-        return hits
 
     def filelog(self, files, followIntegrations=False, longOutput=False, maxRevs=None,
                 _raw=0, **p4options):
