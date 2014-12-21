@@ -1898,11 +1898,10 @@ class P4:
         def get_client_information(name):
             argv = ['client', '-o', name]
 
-            output, error, retval = self._p4run(argv, **p4options)
-            if _raw:
-                return {'stdout': output, 'stderr': error, 'retval': retval}
-
-            return parseForm(output)
+            return self._run_and_process(argv,
+                                         parseForm,
+                                         raw=_raw,
+                                         **p4options)
 
         def create_update_delete_parse_result(output):
             lines = output.splitlines(True)
@@ -1931,24 +1930,20 @@ class P4:
                 formfile = _writeTemporaryForm(form)
                 argv = ['client', '-i', '<', formfile]
 
-                output, error, retval = self._p4run(argv, **p4options)
-
+                return self._run_and_process(argv,
+                                             create_update_delete_parse_result,
+                                             raw=_raw,
+                                             **p4options)
             finally:
                 _removeTemporaryForm(formfile)
-
-            if _raw:
-                return {'stdout': output, 'stderr': error, 'retval': retval}
-
-            return create_update_delete_parse_result(output)
 
         def delete_client(name):
             argv = ['client', '-d', name]
 
-            output, error, retval = self._p4run(argv, **p4options)
-            if _raw:
-                return {'stdout': output, 'stderr': error, 'retval': retval}
-
-            return create_update_delete_parse_result(output)
+            return self._run_and_process(argv,
+                                         create_update_delete_parse_result,
+                                         raw=_raw,
+                                         **p4options)
 
         if delete:
             if name is None:
