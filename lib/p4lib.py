@@ -2021,64 +2021,74 @@ class P4:
         supported. However, there is no strong need to support -t
         because the use of dictionaries in this API makes this trivial.
         """
-        formfile = None
-        try:
-            action = None  # note action to know how to parse output below
-            if delete:
-                action = "delete"
-                if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "
-                                     "specify 'name' of label to delete.")
-                argv = ['label', '-d', name]
-            elif label is None:
-                action = "get"
-                if name is None:
-                    raise P4LibError("Incomplete/missing arguments: must "
-                                     "specify 'name' of label to get.")
-                argv = ['label', '-o', name]
-            else:
-                action = "create/update"
-                if 'label' in label:
-                    name = label["label"]
-                if name is not None:
-                    lbl = self.label(name=name)
-                else:
-                    lbl = {}
-                lbl.update(label)
-                form = makeForm(**lbl)
-
-                # Build submission form file.
-                formfile = _writeTemporaryForm(form)
-                argv = ['label', '-i', '<', formfile]
+        def get_label_information(name):
+            argv = ['label', '-o', name]
 
             output, error, retval = self._p4run(argv, **p4options)
             if _raw:
                 return {'stdout': output, 'stderr': error, 'retval': retval}
 
-            if action == 'get':
-                rv = parseForm(output)
-            elif action in ('create/update', 'delete'):
-                lines = output.splitlines(True)
-                # Example output:
-                #   Label label_1 not changed.
-                #   Label label_2 deleted.
-                #   Label label_3 saved.
-                resultRe = re.compile("^Label (?P<label>[^\s@]+)"
-                                      " (?P<action>not changed|deleted|saved)\.$")
-                match = resultRe.match(lines[0])
-                if match:
-                    rv = match.groupdict()
-                else:
-                    err = "Internal error: could not parse p4 label "\
-                          "output: '%s'" % output
-                    raise P4LibError(err)
-            else:
-                raise P4LibError("Internal error: unexpected action: '%s'"
-                                 % action)
+            return parseForm(output)
 
-            return rv
-        finally:
-            _removeTemporaryForm(formfile)
+        def create_update_delete_parse_result(output):
+            lines = output.splitlines(True)
+            # Example output:
+            #   Label label_1 not changed.
+            #   Label label_2 deleted.
+            #   Label label_3 saved.
+            resultRe = re.compile("^Label (?P<label>[^\s@]+)"
+                                  " (?P<action>not changed|deleted|saved)\.$")
+
+            match = _match_or_raise(resultRe, lines[0], "label")
+            match = resultRe.match(lines[0])
+
+            return match.groupdict()
+
+        def create_update_label(name, label):
+            if 'label' in label:
+                name = label["label"]
+            if name is not None:
+                lbl = self.label(name=name)
+            else:
+                lbl = {}
+            lbl.update(label)
+            form = makeForm(**lbl)
+
+            try:
+                # Build submission form file.
+                formfile = _writeTemporaryForm(form)
+                argv = ['label', '-i', '<', formfile]
+
+                output, error, retval = self._p4run(argv, **p4options)
+            finally:
+                _removeTemporaryForm(formfile)
+
+            if _raw:
+                return {'stdout': output, 'stderr': error, 'retval': retval}
+
+            return create_update_delete_parse_result(output)
+
+        def delete_label(name):
+            argv = ['label', '-d', name]
+
+            output, error, retval = self._p4run(argv, **p4options)
+            if _raw:
+                return {'stdout': output, 'stderr': error, 'retval': retval}
+
+            return create_update_delete_parse_result(output)
+
+        if delete:
+            if name is None:
+                raise P4LibError("Incomplete/missing arguments: must "
+                                 "specify 'name' of label to delete.")
+            return delete_label(name)
+        elif label is None:
+            if name is None:
+                raise P4LibError("Incomplete/missing arguments: must "
+                                 "specify 'name' of label to get.")
+            return get_label_information(name)
+        else:
+            return create_update_label(name, label)
 
     def labels(self, _raw=0, **p4options):
         """Return a list of labels.
