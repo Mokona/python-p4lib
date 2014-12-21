@@ -726,6 +726,10 @@ class P4:
         def where_result_cb(output):
             results = []
             for line in output.splitlines(True):
+                # With spaces inside filenames, the parsing is done by
+                # searching // and platform specific marker for the
+                # third part.
+                # Rather dans Regular Expressions.
                 fileinfo = {}
                 line = _rstriponce(line)
                 if line.startswith('-'):
