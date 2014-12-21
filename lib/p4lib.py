@@ -1150,50 +1150,52 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def edit_parse_cb(output):
+            # Example output:
+            #   //depot/build.py#142 - opened for edit
+            #   ... //depot/build.py - must sync/resolve #143,#148 before submitting
+            #   ... //depot/build.py - also opened by davida@davida-bertha
+            #   ... //depot/build.py - also opened by davida@davida-loom
+            #   ... //depot/build.py - also opened by davida@davida-marteau
+            #   ... //depot/build.py - also opened by trentm@trentm-razor
+            #
+            #   //depot/BuildNum.txt#3 - currently opened for edit
+            #
+            #   //depot/foo.txt - can't change from change 24940 - use 'reopen'
+            #   Returns:
+            #    [{"depotFile": "//depot/foo.txt",
+            #      "rev": None,
+            #      "comment": "can't change from change 24940 - use 'reopen'",
+            #      "notes": []}]
+            hits = []
+            lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
+                                '(?P<comment>.*)$')
+            line2Re = re.compile('^(?P<depotFile>.+?) - '
+                                 '(?P<comment>.*)$')
+            for line in output.splitlines(True):
+                line = line.rstrip()
+                if line.startswith("..."):  # this is a note for the latest hit
+                    note = line.split(' - ')[-1].strip()
+                    hits[-1]['notes'].append(note)
+                else:
+                    match = lineRe.match(line)
+                    if not match:
+                        match = _match_or_raise(line2Re, line, "edit")
+
+                    hit = match.groupdict()
+                    if 'rev' not in hit:  # line2Re
+                        hit['rev'] = None
+                    hit['notes'] = []
+                    hits.append(hit)
+            return hits
+
         optv = _argumentGenerator({'-c': change, '-t': filetype})
-        
         argv = ['edit'] + optv + _normalizeFiles(files)
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        # Example output:
-        #   //depot/build.py#142 - opened for edit
-        #   ... //depot/build.py - must sync/resolve #143,#148 before submitting
-        #   ... //depot/build.py - also opened by davida@davida-bertha
-        #   ... //depot/build.py - also opened by davida@davida-loom
-        #   ... //depot/build.py - also opened by davida@davida-marteau
-        #   ... //depot/build.py - also opened by trentm@trentm-razor
-        #
-        #   //depot/BuildNum.txt#3 - currently opened for edit
-        #
-        #   //depot/foo.txt - can't change from change 24940 - use 'reopen'
-        #   Returns:
-        #    [{"depotFile": "//depot/foo.txt",
-        #      "rev": None,
-        #      "comment": "can't change from change 24940 - use 'reopen'",
-        #      "notes": []}]
-        hits = []
-        lineRe = re.compile('^(?P<depotFile>.+?)#(?P<rev>\d+) - '
-                            '(?P<comment>.*)$')
-        line2Re = re.compile('^(?P<depotFile>.+?) - '
-                             '(?P<comment>.*)$')
-        for line in output.splitlines(True):
-            line = line.rstrip()
-            if line.startswith("..."):  # this is a note for the latest hit
-                note = line.split(' - ')[-1].strip()
-                hits[-1]['notes'].append(note)
-            else:
-                match = lineRe.match(line)
-                if not match:
-                    match = _match_or_raise(line2Re, line, "edit")
-
-                hit = match.groupdict()
-                if 'rev' not in hit:  # line2Re
-                    hit['rev'] = None
-                hit['notes'] = []
-                hits.append(hit)
-        return hits
+        return self._run_and_process(argv,
+                                     edit_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def add(self, files, change=None, filetype=None, _raw=0, **p4options):
         """Open a new file to add it to the depot.
