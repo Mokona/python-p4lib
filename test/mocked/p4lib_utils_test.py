@@ -217,3 +217,12 @@ class MatchOrRaiseTestCase(unittest.TestCase):
         regex = re.compile(r"(?P<capture>.{5})")
         self.assertRaises(p4lib.P4LibError,
                           p4lib._match_or_raise, regex, "abcd", "")
+
+
+class RStripOnceTestCase(unittest.TestCase):
+    def test_removes_only_the_last_newline(self):
+        result = p4lib._rstriponce("\nabc\n\n")
+        self.assertEqual("\nabc\n", result)
+
+    def test_accepts_empty_strings(self):
+        self.assertEqual("", p4lib._rstriponce(""))

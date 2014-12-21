@@ -328,6 +328,11 @@ def _match_or_raise(regex, line, command_msg):
     return m
 
 
+def _rstriponce(line):
+    if line and line[-1] == '\n':
+        line = line[:-1]
+    return line
+
 #---- public stuff
 
 
@@ -779,8 +784,7 @@ class P4:
         haveRe = re.compile('(?P<depotFile>.+)#(?P<rev>\d+)'
                             ' - (?P<localFile>.+)')
         for line in output.splitlines(True):
-            if line[-1] == '\n':
-                line = line[:-1]
+            line = _rstriponce(line)
             match = haveRe.match(line)
             if match:
                 hit = match.groupdict()
