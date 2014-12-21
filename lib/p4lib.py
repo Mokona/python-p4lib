@@ -1213,41 +1213,43 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
-        optv = _argumentGenerator({'-c': change, '-t': filetype})
-        
-        argv = ['add'] + optv + _normalizeFiles(files)
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
-
-        # Example output:
-        #   //depot/apps/px/p4.py#1 - opened for add
-        #   c:\trentm\apps\px\p4.py - missing, assuming text.
-        #
-        #   //depot/apps/px/px.py - can't add (already opened for edit)
-        #   ... //depot/apps/px/px.py - warning: add of existing file
-        #
-        #   //depot/apps/px/px.cpp - can't add existing file
-        #
-        #   //depot/apps/px/t#1 - opened for add
-        #
-        hits = []
-        hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\d+))? - '
-                           '(?P<comment>.*)$')
-        for line in output.splitlines(True):
-            match = hitRe.match(line)
-            if match:
-                hit = match.groupdict()
-                hit = _values_to_int(hit, ['rev'])
-                hit['notes'] = []
-                hits.append(hit)
-            else:
-                if line.startswith("..."):
-                    note = line.split(' - ')[-1].strip()
+        def add_parse_cb(output):
+            # Example output:
+            #   //depot/apps/px/p4.py#1 - opened for add
+            #   c:\trentm\apps\px\p4.py - missing, assuming text.
+            #
+            #   //depot/apps/px/px.py - can't add (already opened for edit)
+            #   ... //depot/apps/px/px.py - warning: add of existing file
+            #
+            #   //depot/apps/px/px.cpp - can't add existing file
+            #
+            #   //depot/apps/px/t#1 - opened for add
+            #
+            hits = []
+            hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\d+))? - '
+                               '(?P<comment>.*)$')
+            for line in output.splitlines(True):
+                match = hitRe.match(line)
+                if match:
+                    hit = match.groupdict()
+                    hit = _values_to_int(hit, ['rev'])
+                    hit['notes'] = []
+                    hits.append(hit)
                 else:
-                    note = line.strip()
-                hits[-1]['notes'].append(note)
-        return hits
+                    if line.startswith("..."):
+                        note = line.split(' - ')[-1].strip()
+                    else:
+                        note = line.strip()
+                    hits[-1]['notes'].append(note)
+            return hits
+
+        optv = _argumentGenerator({'-c': change, '-t': filetype})
+        argv = ['add'] + optv + _normalizeFiles(files)
+
+        return self._run_and_process(argv,
+                                     add_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def files(self, files, _raw=0, **p4options):
         """List files in the depot.
@@ -1283,7 +1285,6 @@ class P4:
                                      files_parse_cb,
                                      raw=_raw,
                                      **p4options)
-
 
     def filelog(self, files, followIntegrations=False, longOutput=False, maxRevs=None,
                 _raw=0, **p4options):
