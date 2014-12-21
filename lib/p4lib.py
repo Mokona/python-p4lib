@@ -2306,20 +2306,23 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def branches_result_cb(output):
+            branchRe = re.compile("^Branch (?P<branch>[^\s@]+) "
+                                  "(?P<update>[\d/]+) "
+                                  "'(?P<description>.*?)'$")
+
+            all_matches = (_match_or_raise(branchRe, l, "branches")
+                           for l in output.splitlines(True))
+            branches = [match.groupdict() for match in all_matches]
+
+            return branches
+
         argv = ['branches']
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        branchRe = re.compile("^Branch (?P<branch>[^\s@]+) "
-                              "(?P<update>[\d/]+) "
-                              "'(?P<description>.*?)'$")
-
-        all_matches = (_match_or_raise(branchRe, l, "branches")
-                       for l in output.splitlines(True))
-        branches = [match.groupdict() for match in all_matches]
-
-        return branches
+        return self._run_and_process(argv,
+                                     branches_result_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def fstat(self, files, _raw=0, **p4options):
         """List files in the depot.
