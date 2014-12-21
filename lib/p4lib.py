@@ -2085,15 +2085,17 @@ class P4:
         labelRe = re.compile("^Label (?P<label>[^\s@]+) "
                              "(?P<update>[\d/]+) "
                              "'(?P<description>.*?)'$")
-        labels = []
-        for line in output.splitlines(True):
+
+        def match_or_raises(line):
             match = labelRe.match(line)
-            if match:
-                label = match.groupdict()
-                labels.append(label)
-            else:
+            if not match:
                 raise P4LibError("Internal error: could not parse "
                                  "'p4 labels' output line: '%s'" % line)
+            return match
+
+        all_matches = (match_or_raises(l) for l in output.splitlines(True))
+        labels = [match.groupdict() for match in all_matches]
+
         return labels
 
     def flush(self, files=[], force=False, dryrun=False, _raw=False, **p4options):
@@ -2128,6 +2130,7 @@ class P4:
         argv = ['flush'] + optv
         if files:
             argv += _normalizeFiles(files)
+
         output, error, retval = self._p4run(argv, **p4options)
         if _raw:
             return {'stdout': output, 'stderr': error, 'retval': retval}
