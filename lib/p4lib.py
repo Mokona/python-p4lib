@@ -1979,22 +1979,25 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def clients_parse_cb(output):
+            # Examples:
+            # Client trentm-ra 2002/03/18 root c:\trentm\ 'Created by trentm. '
+            clientRe = re.compile("^Client (?P<client>[^\s@]+) "
+                                  "(?P<update>[\d/]+) "
+                                  "root (?P<root>.*?) '(?P<description>.*?)'$")
+
+            all_matches = (_match_or_raise(clientRe, l, "clients")
+                           for l in output.splitlines(True))
+            clients = [match.groupdict() for match in all_matches]
+
+            return clients
+
         argv = ['clients']
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        # Examples:
-        #   Client trentm-ra 2002/03/18 root c:\trentm\ 'Created by trentm. '
-        clientRe = re.compile("^Client (?P<client>[^\s@]+) "
-                              "(?P<update>[\d/]+) "
-                              "root (?P<root>.*?) '(?P<description>.*?)'$")
-
-        all_matches = (_match_or_raise(clientRe, l, "clients")
-                       for l in output.splitlines(True))
-        clients = [match.groupdict() for match in all_matches]
-
-        return clients
+        return self._run_and_process(argv,
+                                     clients_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def label(self, name=None, label=None, delete=0, _raw=0, **p4options):
         r"""Create, update, delete, or get a label specification.
