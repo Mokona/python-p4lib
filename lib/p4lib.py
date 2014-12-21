@@ -1455,15 +1455,17 @@ class P4:
         # There is *no* to properly and reliably parse out multiple file
         # output without using -s or -G. Use the latter. (XXX Huh?)
         argv = ['diff'] + optv + _normalizeFiles(files)
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
 
         if satisfying is not None:
-            hits = [{'localFile': line[:-1]} for line in output.splitlines(True)]
+            diff_parse_cb = lambda output: \
+                [{'localFile': line[:-1]} for line in output.splitlines(True)]
         else:
-            hits = _parseDiffOutput(output)
-        return hits
+            diff_parse_cb = _parseDiffOutput
+
+        return self._run_and_process(argv,
+                                     diff_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def diff2(self, file1, file2, diffFormat='', quiet=True, text=0,
               **p4options):
@@ -1553,28 +1555,30 @@ class P4:
         with the unprocessed results of calling p4:
             {'stdout': <stdout>, 'stderr': <stderr>, 'retval': <retval>}
         """
+        def revert_parse_cb(output):
+            # Example output:
+            #   //depot/hello.txt#1 - was edit, reverted
+            #   //depot/test_g.txt#none - was add, abandoned
+            hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\w+))? - '
+                               '(?P<comment>.*)$')
+
+            all_matches = (_match_or_raise(hitRe, l, "revert")
+                           for l in output.splitlines(True))
+            hits = [_values_to_int(match.groupdict(), ["rev"])
+                    for match in all_matches]
+
+            return hits
+
         if not unchangedOnly and not files:
             raise P4LibError("Missing/wrong number of arguments.")
 
         optv = _argumentGenerator({'-c': change, '-a': unchangedOnly})
-
         argv = ['revert'] + optv + _normalizeFiles(files)
-        output, error, retval = self._p4run(argv, **p4options)
-        if _raw:
-            return {'stdout': output, 'stderr': error, 'retval': retval}
 
-        # Example output:
-        #   //depot/hello.txt#1 - was edit, reverted
-        #   //depot/test_g.txt#none - was add, abandoned
-        hitRe = re.compile('^(?P<depotFile>//.+?)(#(?P<rev>\w+))? - '
-                           '(?P<comment>.*)$')
-
-        all_matches = (_match_or_raise(hitRe, l, "revert")
-                       for l in output.splitlines(True))
-        hits = [_values_to_int(match.groupdict(), ["rev"])
-                for match in all_matches]
-
-        return hits
+        return self._run_and_process(argv,
+                                     revert_parse_cb,
+                                     raw=_raw,
+                                     **p4options)
 
     def resolve(self, files=[], autoMode='', force=False, dryrun=False,
                 text=False, verbose=False, _raw=False, **p4options):
