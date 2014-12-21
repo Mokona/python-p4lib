@@ -884,100 +884,119 @@ class P4:
         #XXX .change() API should look more like .client() and .label(),
         #    i.e. passing around a dictionary. Should strings also be
         #    allowed: presumed to be forms?
-        formfile = None
-        try:
-            files = _normalizeFiles(files)
+        def get_change_information(change):
+            argv = ['change', '-o', str(change)]
 
-            action = None  # note action to know how to parse output below
-            if change and files is None and not description:
-                if delete:
-                    # Delete a pending change list.
-                    action = 'delete'
-                    argv = ['change', '-d', str(change)]
-                else:
-                    # Get a change description.
-                    action = 'get'
-                    argv = ['change', '-o', str(change)]
-            else:
-                if delete:
-                    raise P4LibError("Cannot specify 'delete' with either "
-                                     "'files' or 'description'.")
-                if change:
-                    # Edit a current pending changelist.
-                    action = 'update'
-                    ch = self.change(change=change)
-                    if files is None:  # 'files' was not specified.
-                        pass
-                    elif files == []:  # Explicitly specified no files.
-                        # Explicitly specified no files.
-                        ch['files'] = []
-                    else:
-                        depotfiles = [{'depotFile': f['depotFile']}
-                                      for f in self.where(files)]
-                        ch['files'] = depotfiles
-                    if description:
-                        ch['description'] = description
-                    form = makeForm(**ch)
-                elif description:
-                    # Creating a pending changelist.
-                    action = 'create'
-                    # Empty 'files' should default to all opened files in the
-                    # 'default' changelist.
-                    if files is None:
-                        files = [{'depotFile': f['depotFile']}
-                                 for f in self.opened()]
-                    elif files == []:  # Explicitly specified no files.
-                        pass
-                    else:
-                        #TODO: Add test to expect P4LibError if try to use
-                        #      p4 wildcards in files. Currently *do* get
-                        #      correct behaviour.
-                        files = [{'depotFile': f['depotFile']}
-                                 for f in self.where(files)]
-                    form = makeForm(files=files, description=description,
-                                    change='new')
-                else:
-                    raise P4LibError("Incomplete/missing arguments.")
-                # Build submission form file.
-                formfile = _writeTemporaryForm(form)
-                argv = ['change', '-i', '<', formfile]
-            
             output, error, retval = self._p4run(argv, **p4options)
             if _raw:
                 return {'stdout': output, 'stderr': error, 'retval': retval}
 
-            if action == 'get':
-                change = parseForm(output)
-            elif action in ('create', 'update', 'delete'):
-                lines = output.splitlines(True)
-                resultRes = [
-                    re.compile("^Change (?P<change>\d+)"
-                               " (?P<action>created|updated|deleted)\.$"),
-                    re.compile("^Change (?P<change>\d+) (?P<action>created)"
-                               " (?P<comment>.+?)\.$"),
-                    re.compile("^Change (?P<change>\d+) (?P<action>updated)"
-                               ", (?P<comment>.+?)\.$"),
-                    # e.g., Change 1 has 1 open file(s) associated with it and
-                    # can't be deleted.
-                    re.compile("^Change (?P<change>\d+) (?P<comment>.+?)\.$"),
-                ]
-                for resultRe in resultRes:
-                    match = resultRe.match(lines[0])
-                    if match:
-                        change = match.groupdict()
-                        change = _values_to_int(change, ['change'])
-                        break
-                else:
-                    err = "Internal error: could not parse change '%s' "\
-                          "output: '%s'" % (action, output)
-                    raise P4LibError(err)
+            return parseForm(output)
+
+        def create_update_delete_parse_result(output):
+            lines = output.splitlines(True)
+            resultRes = [
+                re.compile("^Change (?P<change>\d+)"
+                           " (?P<action>created|updated|deleted)\.$"),
+                re.compile("^Change (?P<change>\d+) (?P<action>created)"
+                           " (?P<comment>.+?)\.$"),
+                re.compile("^Change (?P<change>\d+) (?P<action>updated)"
+                           ", (?P<comment>.+?)\.$"),
+                # e.g., Change 1 has 1 open file(s) associated with it and
+                # can't be deleted.
+                re.compile("^Change (?P<change>\d+) (?P<comment>.+?)\.$"),
+            ]
+            for resultRe in resultRes:
+                match = resultRe.match(lines[0])
+                if match:
+                    change = match.groupdict()
+                    change = _values_to_int(change, ['change'])
+                    break
             else:
-                raise P4LibError("Internal error: unexpected action: '%s'"
-                                 % action)
+                err = "Internal error: could not parse change '%s' "\
+                      "output: '%s'" % (action, output)
+                raise P4LibError(err)
 
             return change
-        finally:
-            _removeTemporaryForm(formfile)
+
+        def create_update_execute(form):
+            try:
+                formfile = _writeTemporaryForm(form)
+                argv = ['change', '-i', '<', formfile]
+
+                output, error, retval = self._p4run(argv, **p4options)
+            finally:
+                _removeTemporaryForm(formfile)
+
+            if _raw:
+                return {'stdout': output, 'stderr': error, 'retval': retval}
+
+            return create_update_delete_parse_result(output)
+
+
+        def create_change(change, files):
+            # Empty 'files' should default to all opened files in the
+            # 'default' changelist.
+            if files is None:
+                files = [{'depotFile': f['depotFile']}
+                         for f in self.opened()]
+            elif files == []:  # Explicitly specified no files.
+                pass
+            else:
+                #TODO: Add test to expect P4LibError if try to use
+                #      p4 wildcards in files. Currently *do* get
+                #      correct behaviour.
+                files = [{'depotFile': f['depotFile']}
+                         for f in self.where(files)]
+            form = makeForm(files=files, description=description,
+                            change='new')
+
+            return create_update_execute(form)
+
+        def update_change(change, files):
+            ch = self.change(change=change)
+            if files is None:  # 'files' was not specified.
+                pass
+            elif files == []:  # Explicitly specified no files.
+                # Explicitly specified no files.
+                ch['files'] = []
+            else:
+                depotfiles = [{'depotFile': f['depotFile']}
+                              for f in self.where(files)]
+                ch['files'] = depotfiles
+            if description:
+                ch['description'] = description
+            form = makeForm(**ch)
+
+            return create_update_execute(form)
+
+        def delete_change(change):
+            argv = ['change', '-d', str(change)]
+
+            output, error, retval = self._p4run(argv, **p4options)
+            if _raw:
+                return {'stdout': output, 'stderr': error, 'retval': retval}
+
+            return create_update_delete_parse_result(output)
+
+        files = _normalizeFiles(files)
+
+        action = None  # note action to know how to parse output below
+        if change and files is None and not description:
+            if delete:
+                return delete_change(change)
+            else:
+                return get_change_information(change)
+        else:
+            if delete:
+                raise P4LibError("Cannot specify 'delete' with either "
+                                 "'files' or 'description'.")
+            if change:
+                return update_change(change, files)
+            elif description:
+                return create_change(change, files)
+
+        raise P4LibError("Incomplete/missing arguments.")
 
     def changes(self, files=[], followIntegrations=False, longOutput=False,
                 maximum=None, status=None, _raw=False, **p4options):
