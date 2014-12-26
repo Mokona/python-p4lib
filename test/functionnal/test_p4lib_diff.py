@@ -9,10 +9,9 @@
 """Test p4lib.py's interface to 'p4 diff'."""
 
 import os
-import sys
 import types
 import unittest
-import pprint
+import stat
 
 import testsupport
 from p4lib import P4, P4LibError
@@ -28,7 +27,8 @@ class DiffTestCase(unittest.TestCase):
             # Submit a first revision of a test file.
             fname = 'test_diff_formats.txt'
             fout = open(fname, 'w')
-            for i in range(10): fout.write("line %d\n" % i)
+            for i in range(10):
+                fout.write("line %d\n" % i)
             fout.close()
             p4.add(fname)
             p4.submit(fname, 'for test_diff_formats')
@@ -43,7 +43,7 @@ class DiffTestCase(unittest.TestCase):
             result = results[0]
             self.failUnless(os.path.basename(result['depotFile']) == fname)
             self.failUnless(os.path.basename(result['localFile']) == fname)
-            self.failUnless(result.has_key('rev'))
+            self.failUnless('rev' in result.has)
             self.failUnless(result['text'].find('> another line') != -1)
 
             result = p4.diff(fname, diffFormat='')[0]
@@ -54,7 +54,7 @@ class DiffTestCase(unittest.TestCase):
             self.failUnless(result['text'].find('another line') != -1)
 
             result = p4.diff(fname, diffFormat='c')[0]
-            self.failUnless(result['text'].find('*'*15) != -1)
+            self.failUnless(result['text'].find('*' * 15) != -1)
             self.failUnless(result['text'].find('+ another line') != -1)
 
             result = p4.diff(fname, diffFormat='s')[0]
@@ -77,7 +77,8 @@ class DiffTestCase(unittest.TestCase):
             # Submit a first revision of a test file.
             fname = 'test_diff_no_changes.txt'
             fout = open(fname, 'w')
-            for i in range(10): fout.write("line %d\n" % i)
+            for i in range(10):
+                fout.write("line %d\n" % i)
             fout.close()
             p4.add(fname)
             p4.submit(fname, 'for test_diff_no_changes')
@@ -89,8 +90,8 @@ class DiffTestCase(unittest.TestCase):
             result = results[0]
             self.failUnless(os.path.basename(result['depotFile']) == fname)
             self.failUnless(os.path.basename(result['localFile']) == fname)
-            self.failUnless(result.has_key('rev'))
-            self.failIf(result.has_key('text'))
+            self.failUnless('rev' in result)
+            self.failIf('text' in result)
 
             # cleanup
             p4.revert(fname)
@@ -106,7 +107,8 @@ class DiffTestCase(unittest.TestCase):
             # Submit a first revision of a test file.
             fname = 'test_diff_satisfying_a.txt'
             fout = open(fname, 'w')
-            for i in range(10): fout.write("line %d\n" % i)
+            for i in range(10):
+                fout.write("line %d\n" % i)
             fout.close()
             p4.add(fname)
             p4.submit(fname, 'for test_diff_satisfying_a')
@@ -136,7 +138,8 @@ class DiffTestCase(unittest.TestCase):
             # Submit a first revision of a test file.
             fname = 'test_diff_satisfying_d.txt'
             fout = open(fname, 'w')
-            for i in range(10): fout.write("line %d\n" % i)
+            for i in range(10):
+                fout.write("line %d\n" % i)
             fout.close()
             p4.add(fname)
             p4.submit(fname, 'for test_diff_satisfying_d')
@@ -144,7 +147,7 @@ class DiffTestCase(unittest.TestCase):
             results = p4.diff(fname, satisfying='d')
             self.failIf(results)
 
-            os.chmod(fname, 0777)
+            os.chmod(filePath, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
             os.remove(fname)
             result = p4.diff(fname, satisfying='d')[0]
             self.failUnless(os.path.basename(result['localFile']) == fname)
@@ -160,7 +163,8 @@ class DiffTestCase(unittest.TestCase):
             # Submit a first revision of a test file.
             fname = 'test_diff_satisfying_e.txt'
             fout = open(fname, 'w')
-            for i in range(10): fout.write("line %d\n" % i)
+            for i in range(10):
+                fout.write("line %d\n" % i)
             fout.close()
             p4.add(fname)
             p4.submit(fname, 'for test_diff_satisfying_e')
@@ -169,7 +173,7 @@ class DiffTestCase(unittest.TestCase):
             self.failIf(results)
 
             # Make an edit but do NOT open it for edit.
-            os.chmod(fname, 0777)
+            os.chmod(fname, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
             fout = open(fname, 'a')
             fout.write("another line\n")
             fout.close()
@@ -187,7 +191,8 @@ class DiffTestCase(unittest.TestCase):
             # Submit a first revision of a test file.
             fname = 'test_diff_satisfying_r.txt'
             fout = open(fname, 'w')
-            for i in range(10): fout.write("line %d\n" % i)
+            for i in range(10):
+                fout.write("line %d\n" % i)
             fout.close()
             p4.add(fname)
             p4.submit(fname, 'for test_diff_satisfying_r')
@@ -220,13 +225,14 @@ class DiffTestCase(unittest.TestCase):
             # Submit a first revision of a test file.
             fname = 'test_diff_force.txt'
             fout = open(fname, 'w')
-            for i in range(10): fout.write("line %d\n" % i)
+            for i in range(10):
+                fout.write("line %d\n" % i)
             fout.close()
             p4.add(fname)
             p4.submit(fname, 'for test_diff_force')
 
             # Make an edit but do NOT open it for edit.
-            os.chmod(fname, 0777)
+            os.chmod(fname, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
             fout = open(fname, 'a')
             fout.write("another line\n")
             fout.close()
@@ -238,7 +244,7 @@ class DiffTestCase(unittest.TestCase):
             result = results[0]
             self.failUnless(os.path.basename(result['depotFile']) == fname)
             self.failUnless(os.path.basename(result['localFile']) == fname)
-            self.failUnless(result.has_key('rev'))
+            self.failUnless('rev' in result)
             self.failUnless(result['text'].find('> another line') != -1)
         finally:
             os.chdir(top)
@@ -252,7 +258,8 @@ class DiffTestCase(unittest.TestCase):
             # Submit a first revision of a test file (make it binary).
             fname = 'test_diff_binary.txt'
             fout = open(fname, 'w')
-            for i in range(10): fout.write("line %d\n" % i)
+            for i in range(10):
+                fout.write("line %d\n" % i)
             fout.close()
             p4.add(fname, filetype='binary')
             p4.submit(fname, 'for test_diff_binary')
@@ -266,16 +273,16 @@ class DiffTestCase(unittest.TestCase):
             result = p4.diff(fname)[0]
             self.failUnless(os.path.basename(result['depotFile']) == fname)
             self.failUnless(os.path.basename(result['localFile']) == fname)
-            self.failUnless(result.has_key('rev'))
+            self.failUnless('rev' in result)
             self.failUnless(type(result['notes']) == types.ListType)
-            self.failIf(result.has_key('text'))
+            self.failIf('text' in result)
 
             result = p4.diff(fname, text=1)[0]
             self.failUnless(os.path.basename(result['depotFile']) == fname)
             self.failUnless(os.path.basename(result['localFile']) == fname)
-            self.failUnless(result.has_key('rev'))
+            self.failUnless('rev' in result)
             self.failUnless(result['text'].find('> another line') != -1)
-            self.failIf(result.has_key('notes'))
+            self.failIf('notes' in result)
 
             # cleanup
             p4.revert(fname)
@@ -322,7 +329,8 @@ class DiffTestCase(unittest.TestCase):
             fnames = [fname1, fname2]
             for fname in fnames:
                 fout = open(fname, 'w')
-                for i in range(10): fout.write("line %d\n" % i)
+                for i in range(10):
+                    fout.write("line %d\n" % i)
                 fout.close()
             p4.add([fname1, fname2])
             p4.submit([fname1, fname2], 'for test_diff_multiple_files')
@@ -348,8 +356,6 @@ class DiffTestCase(unittest.TestCase):
             os.chdir(top)
 
 
-
 def suite():
     """Return a unittest.TestSuite to be used by test.py."""
     return unittest.makeSuite(DiffTestCase)
-
