@@ -46,6 +46,7 @@ import glob
 import time
 import tempfile
 import unittest
+import stat
 
 import which
 import testsupport
@@ -67,7 +68,7 @@ gVerbosity = 2
 def _rmtreeOnError(rmFunction, filePath, excInfo):
     if excInfo[0] == OSError:
         # presuming because file is read-only
-        os.chmod(filePath, 0777)
+        os.chmod(filePath, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
         rmFunction(filePath)
 
 
@@ -136,7 +137,7 @@ def _setUp(p4d=None):
         cmd = '%s -J journal -L log -p %s -r %s &'\
               % (p4d, testsupport.p4port, os.path.abspath(testsupport.p4root))
     os.system(cmd)
-    print "Starting Perforce server with '%s'..." % cmd
+    print ("Starting Perforce server with '%s'..." % cmd)
     time.sleep(1)  # Give it a second to start up.
     if gVerbosity >= 3:
         os.system('p4 -u andrew -p %s info' % testsupport.p4port)
@@ -195,9 +196,9 @@ View:
             os.environ["PATH"]
     else:
         os.environ["PATH"] = os.path.abspath(os.pardir)
-    print "Setup to test: "
+    print ("Setup to test: ")
     import p4lib
-    print "\tp4lib at %r" % p4lib.__file__
+    print ("\tp4lib at %r" % p4lib.__file__)
     # try:
     #     px = which.which('px')
     #     print "\tpx at %r" % px
@@ -210,17 +211,17 @@ View:
 
 def _tearDown(p4d=None):
     print ("=" * 50)
-    print "Tearing down test workspace."
+    print ("Tearing down test workspace.")
     if sys.platform.startswith('win'):
         cmd = 'p4 -u andrew -p %s info > nul 2>&1' % testsupport.p4port
     else:
         cmd = 'p4 -u andrew -p %s info > /dev/null 2>&1' % testsupport.p4port
     if not os.system(cmd):
-        print "Stopping test server on port %s." % testsupport.p4port
+        print ("Stopping test server on port %s." % testsupport.p4port)
         os.system('p4 -u andrew -p %s admin stop' % testsupport.p4port)
     time.sleep(1)  # Give it a second to shutdown.
     if os.path.exists(testsupport.tmp):
-        print "Removing working dir: '%s'" % testsupport.tmp
+        print ("Removing working dir: '%s'" % testsupport.tmp)
         _rmtree(testsupport.tmp)
     print ("=" * 50)
 
@@ -238,10 +239,10 @@ def test(testModules, testDir=os.curdir, exclude=[]):
         moduleFile = os.path.basename(moduleFile)
 
         if moduleFile in exclude:
-            print "-> Exclude: " + moduleFile
+            print ("-> Exclude: " + moduleFile)
             continue
 
-        print "-> Import: " + moduleFile
+        print ("-> Import: " + moduleFile)
         module = __import__(moduleFile, globals(), locals(), [])
         # module = importlib.import_module(moduleFile)
         suite = getattr(module, "suite", None)
@@ -249,8 +250,8 @@ def test(testModules, testDir=os.curdir, exclude=[]):
             allSuites.append(suite())
         else:
             if gVerbosity >= 2:
-                print "WARNING: module '%s' did not have a suite() method."\
-                      % moduleFile
+                print ("WARNING: module '%s' did not have a suite() method."
+                       % moduleFile)
     suite = unittest.TestSuite(allSuites)
 
     # Run the suite.
@@ -270,9 +271,9 @@ def main(argv):
                                           ['help', 'verbose', 'quiet',
                                            'exclude=', 'p4d=', 'clean',
                                            'no-clean'])
-    except getopt.error, ex:
-        print "%s: ERROR: %s" % (argv[0], ex)
-        print __doc__
+    except getopt.error as ex:
+        print ("%s: ERROR: %s" % (argv[0], ex))
+        print (__doc__)
         sys.exit(2)
     exclude = []
     setupOpts = {}
@@ -280,7 +281,7 @@ def main(argv):
     clean = 1
     for opt, optarg in opts:
         if opt in ("-h", "--help"):
-            print __doc__
+            print (__doc__)
             sys.exit(0)
         elif opt in ("-v", "--verbose"):
             gVerbosity += 1
