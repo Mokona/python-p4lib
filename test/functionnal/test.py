@@ -44,7 +44,6 @@ import sys
 import getopt
 import glob
 import time
-import types
 import tempfile
 import unittest
 
@@ -70,6 +69,7 @@ def _rmtreeOnError(rmFunction, filePath, excInfo):
         # presuming because file is read-only
         os.chmod(filePath, 0777)
         rmFunction(filePath)
+
 
 def _rmtree(dirname):
     import shutil
@@ -103,24 +103,25 @@ def _getP4D():
                             "to the current directory or to somewhere on "
                             "your PATH")
 
+
 def _setUp(p4d=None):
-    print "="*50
-    print "Setting up test workspace."
+    print ("=" * 50)
+    print ("Setting up test workspace.")
 
     # Abort if there is a server running at this port or if the tmp
     # working directory exists.
     if os.path.exists(testsupport.tmp):
-        raise TestError("Intended test working dir, '%s', already exists. "\
-                        "Perhaps you need to run 'python test.py -c'."\
+        raise TestError("Intended test working dir, '%s', already exists. "
+                        "Perhaps you need to run 'python test.py -c'."
                         % testsupport.tmp)
     if sys.platform.startswith('win'):
         cmd = 'p4 -u andrew -p %s info > nul 2>&1' % testsupport.p4port
     else:
         cmd = 'p4 -u andrew -p %s info > /dev/null 2>&1' % testsupport.p4port
     if not os.system(cmd):
-        raise TestError("There is currently a Perforce server running at "\
-                        "the intended test server port, '%s'. "\
-                        "Perhaps you need to run 'python test.py -c'."\
+        raise TestError("There is currently a Perforce server running at "
+                        "the intended test server port, '%s'. "
+                        "Perhaps you need to run 'python test.py -c'."
                         % testsupport.p4port)
 
     # Start the server.
@@ -183,14 +184,15 @@ View:
               % (testsupport.p4port, tmpfile)
         retval = os.system(cmd)
         if retval:
-            raise TestError("Problem setting up client for '%s' with '%s'."\
+            raise TestError("Problem setting up client for '%s' with '%s'."
                             % (username, cmd))
 
     # Put p4lib.py on sys.path and ../px.exe on the PATH.
     sys.path.insert(0, os.path.abspath(os.pardir))
-    if os.environ.has_key("PATH"):
-        os.environ["PATH"] = os.path.abspath(os.pardir) + os.pathsep\
-                             + os.environ["PATH"]
+    if "PATH" in os.environ:
+        os.environ["PATH"] = os.path.abspath(os.pardir) + \
+            os.pathsep + \
+            os.environ["PATH"]
     else:
         os.environ["PATH"] = os.path.abspath(os.pardir)
     print "Setup to test: "
@@ -203,11 +205,11 @@ View:
     #     sys.stdout.flush()
     #     os.system('px -V')
 
-    print "="*50
+    print ("=" * 50)
 
 
 def _tearDown(p4d=None):
-    print "="*50
+    print ("=" * 50)
     print "Tearing down test workspace."
     if sys.platform.startswith('win'):
         cmd = 'p4 -u andrew -p %s info > nul 2>&1' % testsupport.p4port
@@ -220,7 +222,7 @@ def _tearDown(p4d=None):
     if os.path.exists(testsupport.tmp):
         print "Removing working dir: '%s'" % testsupport.tmp
         _rmtree(testsupport.tmp)
-    print "="*50
+    print ("=" * 50)
 
 
 def test(testModules, testDir=os.curdir, exclude=[]):
@@ -265,12 +267,13 @@ def main(argv):
     global gVerbosity
     try:
         opts, testModules = getopt.getopt(sys.argv[1:], 'hvqx:cn',
-            ['help', 'verbose', 'quiet', 'exclude=',
-             'p4d=', 'clean', 'no-clean'])
+                                          ['help', 'verbose', 'quiet',
+                                           'exclude=', 'p4d=', 'clean',
+                                           'no-clean'])
     except getopt.error, ex:
         print "%s: ERROR: %s" % (argv[0], ex)
         print __doc__
-        sys.exit(2)  
+        sys.exit(2)
     exclude = []
     setupOpts = {}
     justClean = 0
@@ -304,5 +307,5 @@ def main(argv):
     return retval
 
 if __name__ == '__main__':
-    sys.exit( main(sys.argv) )
+    sys.exit(main(sys.argv))
 
