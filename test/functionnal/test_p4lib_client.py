@@ -9,9 +9,7 @@
 """Test p4lib.py's interface to 'p4 client'."""
 
 import os
-import sys
 import unittest
-import pprint
 
 import testsupport
 from p4lib import P4, P4LibError
@@ -33,14 +31,14 @@ class ClientTestCase(unittest.TestCase):
             name = p4.clients()[0]['client']
             client = p4.client(name=name)
             self.failUnless(client['client'] == name)
-            self.failUnless(client.has_key('access'))
-            self.failUnless(client.has_key('description'))
-            self.failUnless(client.has_key('lineend'))
-            self.failUnless(client.has_key('options'))
-            self.failUnless(client.has_key('owner'))
-            self.failUnless(client.has_key('root'))
-            self.failUnless(client.has_key('update'))
-            self.failUnless(client.has_key('view'))
+            self.failUnless('access' in client)
+            self.failUnless('description' in client)
+            self.failUnless('lineend' in client)
+            self.failUnless('options' in client)
+            self.failUnless('owner' in client)
+            self.failUnless('root' in client)
+            self.failUnless('update' in client)
+            self.failUnless('view' in client)
         finally:
             os.chdir(top)
 
@@ -67,17 +65,17 @@ class ClientTestCase(unittest.TestCase):
 
             # Check that the client is now still the same.
             clientAfter = p4.client(name=name)
-            self.failUnless(clientBefore['description'] ==\
+            self.failUnless(clientBefore['description'] ==
                             clientAfter['description'])
-            self.failUnless(clientBefore['lineend'] ==\
+            self.failUnless(clientBefore['lineend'] ==
                             clientAfter['lineend'])
-            self.failUnless(clientBefore['options'] ==\
+            self.failUnless(clientBefore['options'] ==
                             clientAfter['options'])
-            self.failUnless(clientBefore['owner'] ==\
+            self.failUnless(clientBefore['owner'] ==
                             clientAfter['owner'])
-            self.failUnless(clientBefore['root'] ==\
+            self.failUnless(clientBefore['root'] ==
                             clientAfter['root'])
-            self.failUnless(clientBefore['view'] ==\
+            self.failUnless(clientBefore['view'] ==
                             clientAfter['view'])
         finally:
             os.chdir(top)

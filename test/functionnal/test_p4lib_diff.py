@@ -147,7 +147,7 @@ class DiffTestCase(unittest.TestCase):
             results = p4.diff(fname, satisfying='d')
             self.failIf(results)
 
-            os.chmod(filePath, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+            os.chmod(fname, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
             os.remove(fname)
             result = p4.diff(fname, satisfying='d')[0]
             self.failUnless(os.path.basename(result['localFile']) == fname)
@@ -347,7 +347,7 @@ class DiffTestCase(unittest.TestCase):
             for result in results:
                 self.failUnless(os.path.basename(result['depotFile']) in fnames)
                 self.failUnless(os.path.basename(result['localFile']) in fnames)
-                self.failUnless(result.has_key('rev'))
+                self.failUnless('rev' in result)
                 self.failUnless(result['text'].find('> another line') != -1)
 
             # cleanup

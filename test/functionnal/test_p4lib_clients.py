@@ -9,12 +9,10 @@
 """Test p4lib.py's interface to 'p4 clients'."""
 
 import os
-import sys
 import unittest
-import pprint
 
 import testsupport
-from p4lib import P4, P4LibError
+from p4lib import P4
 
 
 class ClientsTestCase(unittest.TestCase):
@@ -28,10 +26,10 @@ class ClientsTestCase(unittest.TestCase):
 
             clients = p4.clients()
             for client in clients:
-                self.failUnless(client.has_key('client'))
-                self.failUnless(client.has_key('update'))
-                self.failUnless(client.has_key('root'))
-                self.failUnless(client.has_key('description'))
+                self.failUnless('client' in client)
+                self.failUnless('update' in client)
+                self.failUnless('root' in client)
+                self.failUnless('description' in client)
         finally:
             os.chdir(top)
 

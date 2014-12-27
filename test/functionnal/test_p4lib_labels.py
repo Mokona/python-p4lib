@@ -9,12 +9,10 @@
 """Test p4lib.py's interface to 'p4 labels'."""
 
 import os
-import sys
 import unittest
-import pprint
 
 import testsupport
-from p4lib import P4, P4LibError
+from p4lib import P4
 
 
 class LabelsTestCase(unittest.TestCase):
@@ -35,9 +33,9 @@ class LabelsTestCase(unittest.TestCase):
             labels = p4.labels()
             for label in labels:
                 if label["label"] == "test_get_labels":
-                    self.failUnless(label.has_key('label'))
-                    self.failUnless(label.has_key('update'))
-                    self.failUnless(label.has_key('description'))
+                    self.failUnless('label' in label)
+                    self.failUnless('update' in label)
+                    self.failUnless('description' in label)
         finally:
             os.chdir(top)
 

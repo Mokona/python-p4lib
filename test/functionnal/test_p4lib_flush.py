@@ -9,12 +9,10 @@
 """Test p4lib.py's interface to 'p4 flush'."""
 
 import os
-import sys
 import unittest
-import pprint
 
 import testsupport
-from p4lib import P4, P4LibError
+from p4lib import P4
 
 
 class FlushTestCase(unittest.TestCase):
@@ -44,8 +42,8 @@ class FlushTestCase(unittest.TestCase):
             result = results[0]
             self.failUnless(result['comment'].startswith("added"))
             self.failUnless(result['depotFile'].endswith(fname))
-            self.failUnless(result.has_key('rev'))
-            self.failUnless(result.has_key('notes'))
+            self.failUnless('rev' in result)
+            self.failUnless('notes' in result)
         finally:
             os.chdir(top)
 
@@ -124,7 +122,6 @@ class FlushTestCase(unittest.TestCase):
             p4.revert(fname)
         finally:
             os.chdir(top)
-
 
 
 def suite():

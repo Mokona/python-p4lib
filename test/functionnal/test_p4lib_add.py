@@ -9,13 +9,11 @@
 """Test p4lib.py's interface to 'p4 add'."""
 
 import os
-import sys
 import unittest
 import types
-import pprint
 
 import testsupport
-from p4lib import P4, P4LibError
+from p4lib import P4
 
 
 class AddTestCase(unittest.TestCase):
@@ -29,10 +27,10 @@ class AddTestCase(unittest.TestCase):
             open(newfile, 'w').write('Hello there.\n')
             result = p4.add(newfile)[0]
             self.failUnless(len(result))
-            self.failUnless(result.has_key('depotFile'))
-            self.failUnless(result.has_key('rev'))
+            self.failUnless('depotFile' in result)
+            self.failUnless('rev' in result)
             self.failUnless(type(result['rev']) == types.IntType)
-            self.failUnless(result.has_key('comment'))
+            self.failUnless('comment' in result)
             opened = p4.opened(newfile)
             self.failUnless(len(opened) == 1,
                             "Added '%s', but it is not opened." % newfile)

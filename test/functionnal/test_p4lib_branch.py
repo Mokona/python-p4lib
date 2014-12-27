@@ -39,12 +39,12 @@ class BranchTestCase(unittest.TestCase):
             p4.branch(branch=branchDict)
             branch = p4.branch("test_get_branch")
             self.failUnless(branch["branch"] == name)
-            self.failUnless(branch.has_key("access"))
-            self.failUnless(branch.has_key("description"))
-            self.failUnless(branch.has_key("options"))
-            self.failUnless(branch.has_key("owner"))
-            self.failUnless(branch.has_key("update"))
-            self.failUnless(branch.has_key("view"))
+            self.failUnless("access" in branch)
+            self.failUnless("description" in branch)
+            self.failUnless("options" in branch)
+            self.failUnless("owner" in branch)
+            self.failUnless("update" in branch)
+            self.failUnless("view" in branch)
         finally:
             os.chdir(top)
 

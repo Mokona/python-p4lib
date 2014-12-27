@@ -9,12 +9,10 @@
 """Test p4lib.py's interface to 'p4 branches'."""
 
 import os
-import sys
 import unittest
-import pprint
 
 import testsupport
-from p4lib import P4, P4LibError
+from p4lib import P4
 
 
 class BranchesTestCase(unittest.TestCase):
@@ -35,9 +33,9 @@ class BranchesTestCase(unittest.TestCase):
             branches = p4.branches()
             for branch in branches:
                 if branch["branch"] == "test_get_branches":
-                    self.failUnless(branch.has_key('branch'))
-                    self.failUnless(branch.has_key('update'))
-                    self.failUnless(branch.has_key('description'))
+                    self.failUnless('branch' in branch)
+                    self.failUnless('update' in branch)
+                    self.failUnless('description' in branch)
         finally:
             os.chdir(top)
 

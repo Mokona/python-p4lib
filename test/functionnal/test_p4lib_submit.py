@@ -52,7 +52,7 @@ class SubmitTestCase(unittest.TestCase):
             p4.add(fname)
             result = p4.submit([], 'checkin with implicit files')
             self.failUnless(result['action'] == 'submitted')
-            self.failUnless(result.has_key('change'))
+            self.failUnless('change' in result)
 
             actual = result['files'][0]['depotFile']
             expected = p4.where(fname)[0]['depotFile']

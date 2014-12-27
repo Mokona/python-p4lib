@@ -9,12 +9,10 @@
 """Test p4lib.py's interface to 'p4 resolve'."""
 
 import os
-import sys
 import unittest
-import pprint
 
 import testsupport
-from p4lib import P4, P4LibError
+from p4lib import P4
 
 
 class ResolveTestCase(unittest.TestCase):
@@ -72,9 +70,9 @@ class ResolveTestCase(unittest.TestCase):
             self.failUnless(result[0]['diff chunks']['theirs'] == 1)
             self.failUnless(result[0]['diff chunks']['both'] == 0)
             self.failUnless(result[0]['diff chunks']['conflicting'] == 0)
-            self.failUnless(result[0].has_key('depotFile'))
-            self.failUnless(result[0].has_key('localFile'))
-            self.failUnless(result[0].has_key('clientFile'))
+            self.failUnless('depotFile' in result[0])
+            self.failUnless('localFile' in result[0])
+            self.failUnless('clientFile' in result[0])
             contents = open(fname, 'r').read()
             self.failUnless(contents.find('(bertha was here)') != -1)
             p4.revert(fname)    # cleanup
@@ -109,10 +107,10 @@ class ResolveTestCase(unittest.TestCase):
             p4.sync(fname)
             result = p4.resolve(fname, autoMode='y')
             self.failUnless(result[0]['action'].startswith('ignored'))
-            self.failUnless(not result[0].has_key('diff chunks'))
-            self.failUnless(result[0].has_key('depotFile'))
-            self.failUnless(result[0].has_key('localFile'))
-            self.failUnless(result[0].has_key('clientFile'))
+            self.failUnless('diff chunks' not in result[0])
+            self.failUnless('depotFile' in result[0])
+            self.failUnless('localFile' in result[0])
+            self.failUnless('clientFile' in result[0])
 
             # cleanup
             p4.revert(fname)
