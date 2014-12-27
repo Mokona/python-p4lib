@@ -49,7 +49,7 @@ import marshal
 import getopt
 import tempfile
 import copy
-from functools import cmp_to_key
+import subprocess
 
 #---- exceptions
 
@@ -149,6 +149,24 @@ def _joinArgv(argv):
     return cmdstr
 
 
+def _call_subprocess(arguments, stdin=None):
+    proc = subprocess.Popen(arguments,
+                            stdin=stdin,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
+    output, error = proc.communicate()
+    output = output.decode()
+    error = error.decode()
+
+    retval = proc.returncode
+
+    return output, error, retval
+
+
+def _args_contain_stdin_redirection(args):
+    return '<' in args and len(args) > 2 and args[-2] == '<'
+
+
 def _run(argv):
     """Prepare and run the given arg vector, 'argv', and return the
     results.  Returns (<stdout lines>, <stderr lines>, <return value>).
@@ -158,29 +176,21 @@ def _run(argv):
         cmd = _joinArgv(argv)
     else:
         cmd = argv
+
     log.debug("Running '%s'..." % cmd)
-    if sys.platform.startswith('win'):
-        i, o, e = os.popen3(cmd)
-        output = o.read()
-        error = e.read()
-        i.close()
-        e.close()
-        retval = o.close()
+
+    if 'PWD' in os.environ:
+        del os.environ["PWD"]
+
+    cmd = cmd.split()
+
+    if _args_contain_stdin_redirection(cmd):
+        with open(cmd[-1]) as tmp:
+            cmd = cmd[:-2]
+            output, error, retval = _call_subprocess(cmd, tmp)
     else:
-        import popen2
-        p = popen2.Popen3(cmd, 1)
-        i, o, e = p.tochild, p.fromchild, p.childerr
-        output = o.read()
-        error = e.read()
-        i.close()
-        o.close()
-        e.close()
-        rv = p.wait()
-        if os.WIFEXITED(rv):
-            retval = os.WEXITSTATUS(rv)
-        else:
-            raise P4LibError("Error running '%s', it did not exit "
-                             "properly: rv=%d" % (cmd, rv))
+        output, error, retval = _call_subprocess(cmd)
+
     if retval:
         raise P4LibError("Error running '%s': error='%s' retval='%s'"
                          % (cmd, error, retval))
