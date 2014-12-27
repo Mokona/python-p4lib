@@ -10,7 +10,6 @@
 
 import os
 import unittest
-import types
 
 import testsupport
 from p4lib import P4
@@ -29,7 +28,7 @@ class AddTestCase(unittest.TestCase):
             self.failUnless(len(result))
             self.failUnless('depotFile' in result)
             self.failUnless('rev' in result)
-            self.failUnless(type(result['rev']) == types.IntType)
+            self.failUnless(isinstance(result['rev'], int))
             self.failUnless('comment' in result)
             opened = p4.opened(newfile)
             self.failUnless(len(opened) == 1,

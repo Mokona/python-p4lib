@@ -9,7 +9,6 @@
 """Test p4lib.py's interface to 'p4 diff'."""
 
 import os
-import types
 import unittest
 import stat
 
@@ -43,7 +42,7 @@ class DiffTestCase(unittest.TestCase):
             result = results[0]
             self.failUnless(os.path.basename(result['depotFile']) == fname)
             self.failUnless(os.path.basename(result['localFile']) == fname)
-            self.failUnless('rev' in result.has)
+            self.failUnless('rev' in result)
             self.failUnless(result['text'].find('> another line') != -1)
 
             result = p4.diff(fname, diffFormat='')[0]
@@ -274,7 +273,7 @@ class DiffTestCase(unittest.TestCase):
             self.failUnless(os.path.basename(result['depotFile']) == fname)
             self.failUnless(os.path.basename(result['localFile']) == fname)
             self.failUnless('rev' in result)
-            self.failUnless(type(result['notes']) == types.ListType)
+            self.failUnless(isinstance(result['notes'], list))
             self.failIf('text' in result)
 
             result = p4.diff(fname, text=1)[0]
