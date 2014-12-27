@@ -9,12 +9,10 @@
 """Test p4lib.py's interface to 'p4 submit'."""
 
 import os
-import sys
 import unittest
-import pprint
 
 import testsupport
-from p4lib import P4, P4LibError
+from p4lib import P4
 
 
 class SubmitTestCase(unittest.TestCase):
@@ -30,12 +28,13 @@ class SubmitTestCase(unittest.TestCase):
             os.chdir(andrew['home'])
             p4 = P4()
             fname = 'test_submit_simple.txt'
-            open(fname, 'w').write('Hello there.\n')
+            with open(fname, 'w') as f:
+                f.write('Hello there.\n')
             p4.add(fname)
             result = p4.submit(fname, 'first checkin of this file')
             self.failUnless(result['action'] == 'submitted')
-            self.failUnless(result.has_key('change'))
-            self.failUnless(result['files'][0]['depotFile']\
+            self.failUnless('change' in result)
+            self.failUnless(result['files'][0]['depotFile']
                             == p4.where(fname)[0]['depotFile'])
             self.failUnless(result['files'][0]['rev'] == 1)
             self.failUnless(result['files'][0]['action'] == 'add')
