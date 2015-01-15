@@ -150,6 +150,10 @@ def _joinArgv(argv):
 
 
 def _call_subprocess(arguments, stdin=None):
+    old_pwd = os.environ.get('PWD', None)
+    if old_pwd:
+        del os.environ["PWD"]
+
     proc = subprocess.Popen(arguments,
                             stdin=stdin,
                             stdout=subprocess.PIPE,
@@ -159,6 +163,8 @@ def _call_subprocess(arguments, stdin=None):
     error = error.decode()
 
     retval = proc.returncode
+
+    os.environ['PWD'] = old_pwd
 
     return output, error, retval
 
@@ -178,9 +184,6 @@ def _run(argv):
         cmd = argv
 
     log.debug("Running '%s'..." % cmd)
-
-    if 'PWD' in os.environ:
-        del os.environ["PWD"]
 
     cmd = cmd.split()
 
