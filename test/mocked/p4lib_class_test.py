@@ -1,6 +1,6 @@
 import unittest
 import p4lib
-from unittest.mock import Mock
+from mock23 import Mock
 
 
 class P4LibTestCase(unittest.TestCase):
