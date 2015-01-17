@@ -490,7 +490,7 @@ def parseForm(content):
 
         return spec
 
-    if isinstance(content, str):
+    if isinstance(content, str) or isinstance(content, unicode):
         lines = content.splitlines(True)
     else:
         lines = content
