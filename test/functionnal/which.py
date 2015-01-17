@@ -242,11 +242,11 @@ def which(command, path=None, verbose=0, exts=None):
 
     If no match is found for the command, a WhichError is raised.
     """
-    try:
-        match = whichgen(command, path, verbose, exts).__next__()
-    except StopIteration:
+    match_list = list(whichgen(command, path, verbose, exts))
+    if not match_list:
         raise WhichError("Could not find '%s' on the path." % command)
-    return match
+    else:
+        return match_list[0]
 
 
 def whichall(command, path=None, verbose=0, exts=None):
