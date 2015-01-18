@@ -62,9 +62,9 @@ class DiffTestCase(unittest.TestCase):
             result = p4.diff(fname, diffFormat='u')[0]
             self.failUnless(result['text'].find('+another line') != -1)
 
+        finally:
             # cleanup
             p4.revert(fname)
-        finally:
             os.chdir(top)
 
     def test_diff_no_changes(self):
@@ -92,9 +92,9 @@ class DiffTestCase(unittest.TestCase):
             self.failUnless('rev' in result)
             self.failIf('text' in result)
 
+        finally:
             # cleanup
             p4.revert(fname)
-        finally:
             os.chdir(top)
 
     def test_diff_satisfying_a(self):
@@ -123,9 +123,9 @@ class DiffTestCase(unittest.TestCase):
             result = p4.diff(fname, satisfying='a')[0]
             self.failUnless(os.path.basename(result['localFile']) == fname)
 
+        finally:
             # cleanup
             p4.revert(fname)
-        finally:
             os.chdir(top)
 
     def test_diff_satisfying_d(self):
@@ -210,9 +210,9 @@ class DiffTestCase(unittest.TestCase):
             results = p4.diff(fname, satisfying='r')
             self.failIf(results)
 
+        finally:
             # cleanup
             p4.revert(fname)
-        finally:
             os.chdir(top)
 
     def test_diff_force(self):
@@ -283,9 +283,9 @@ class DiffTestCase(unittest.TestCase):
             self.failUnless(result['text'].find('> another line') != -1)
             self.failIf('notes' in result)
 
+        finally:
             # cleanup
             p4.revert(fname)
-        finally:
             os.chdir(top)
 
     def test_diff_bogus_args(self):
@@ -311,9 +311,9 @@ class DiffTestCase(unittest.TestCase):
             self.failUnlessRaises(P4LibError, p4.diff, fname, diffFormat='q')
             self.failUnlessRaises(P4LibError, p4.diff, fname, satisfying='q')
 
+        finally:
             # cleanup
             p4.revert(fname)
-        finally:
             os.chdir(top)
 
     def test_diff_multiple_files(self):
@@ -349,9 +349,9 @@ class DiffTestCase(unittest.TestCase):
                 self.failUnless('rev' in result)
                 self.failUnless(result['text'].find('> another line') != -1)
 
+        finally:
             # cleanup
             p4.revert(fnames)
-        finally:
             os.chdir(top)
 
 
