@@ -260,8 +260,19 @@ def _normalizeFiles(files):
     return files
 
 
+def _isText(txt):
+    """ Returns True if txt is of a text type.
+
+    It is there to take the unification of text types, and
+    removal of unicode type in Python3."""
+
+    if sys.version_info.major == 2:
+        return isinstance(txt, str) or isinstance(txt, unicode)
+    return isinstance(txt, str)
+
+
 def _parseDiffOutput(output):
-    if isinstance(output, str):
+    if _isText(output):
         outputLines = output.splitlines(True)
     else:
         outputLines = output
@@ -287,6 +298,7 @@ def _parseDiffOutput(output):
         header2 = header2Re.match(line)
         header3 = header3Re.match(line)
         header4 = header4Re.match(line)
+
         if header1:
             hit = header1.groupdict()
             hit['rev'] = int(hit['rev'])
@@ -490,7 +502,7 @@ def parseForm(content):
 
         return spec
 
-    if isinstance(content, str) or isinstance(content, unicode):
+    if _isText(content):
         lines = content.splitlines(True)
     else:
         lines = content
