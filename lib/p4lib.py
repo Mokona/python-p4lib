@@ -126,7 +126,14 @@ def _escapeArg(arg):
     #XXX There is a *lot* more that we should escape here.
     #XXX This is also not right on Linux, just try putting 'p4' is a dir
     #    with spaces.
-    return arg.replace('"', r'\"')
+    return arg.replace('"', r'\"').replace("@", "%40")
+
+
+def _hasSpecialChars(files):
+    for f in files:
+        if f.find("@") != -1:
+            return True
+    return False
 
 
 def _joinArgv(argv):
@@ -180,6 +187,9 @@ def _run(argv):
     """
     if isinstance(argv, list) or isinstance(argv, tuple):
         cmd = _joinArgv(argv)
+        # For "add" command, files must have special characters and "-f" option
+        if "add" in argv:
+            cmd = cmd.replace("%40", "@")
     else:
         cmd = argv
 
@@ -1261,6 +1271,10 @@ class P4:
             return hits
 
         optv = _argumentGenerator({'-c': change, '-t': filetype})
+
+        if _hasSpecialChars(files):
+            optv = ['-f'] + optv
+
         argv = ['add'] + optv + _normalizeFiles(files)
 
         return self._run_and_process(argv,
@@ -1564,9 +1578,8 @@ class P4:
                **p4options):
         """Discard changes for the given opened files.
         
-        "files" is a list of files or file wildcards to revert. If
-            'unchangedOnly' is true, then this defaults to the
-            whole client view.
+        "files" is a list of files or file wildcards to revert. Default
+            to the whole client view.
         "change" (-c) will limit to files opened in the given
             changelist.
         "unchangedOnly" (-a) will only revert opened files that are not
