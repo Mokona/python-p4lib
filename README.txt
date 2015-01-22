@@ -3,13 +3,12 @@ p4lib status
 
 Mature; has been heavily used in a commercial product for
 over 3 years. Limited in the coverage of the Perforce Client
-API. 
+API.
 
-This particular fork is a work in progress while refactoring to
-be compatible with Python 3.4. The above comment applies
-to commit fd7ba11f59fa01153e52a7b1813526a07819814a from
-2010 06 07.
+This fork in compatible with both Python 2.7 and Python 3.4.
+Might be compatible with other Python 3.x versions.
 
+Compatibility with Python 3 starts with v0.9.6
 
 px status
 ---------
@@ -17,6 +16,9 @@ px status
 Hasn't been updated in a while so is showing its age in
 some places (e.g. 'px annotate' was added before p4 grew an
 annotate command).
+
+px has not been updated after v0.9.5 and is probably not working starting
+with version v0.9.6.
 
 px
 ----------------
@@ -181,12 +183,14 @@ Personally, the extensions that I find most useful are:
 Change Log
 ----------
 
-### v0.9.6b
+### v0.9.6
 
+- First version compatible with Python 2.7 and Python 3.4.
 - Arguments designing switches now take boolean and no more 0/1 int values.
   This is a breaking change if you used 0/1 int values, as the command won't
   take them. If you already used boolean values, leaning on the fact that
   True/False are converted to 1/0, then you're safe.
+- p4lib can add() files with the p4 restricted '@' char.
 
 ### v0.9.5
 - Fix a problem identified by "j w" where

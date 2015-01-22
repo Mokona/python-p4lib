@@ -38,7 +38,7 @@
 #     branches in one group; client, change, branch, label in another.
 #     Should share implementation between these all.
 
-__version_info__ = (0, 9, 6, 'beta')
+__version_info__ = (0, 9, 6)
 __version__ = '.'.join(map(str, __version_info__))
 
 import os
