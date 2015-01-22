@@ -1492,9 +1492,8 @@ class P4:
                **p4options):
         """Discard changes for the given opened files.
         
-        "files" is a list of files or file wildcards to revert. If
-            'unchangedOnly' is true, then this defaults to the
-            whole client view.
+        "files" is a list of files or file wildcards to revert. Default
+            to the whole client view.
         "change" (-c) will limit to files opened in the given
             changelist.
         "unchangedOnly" (-a) will only revert opened files that are not
