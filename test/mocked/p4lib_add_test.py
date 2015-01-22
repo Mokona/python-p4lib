@@ -71,6 +71,16 @@ class AddTestCase(unittest.TestCase):
         p4lib._run.assert_called_with(['p4', 'add',
                                        '-t', 'text', ADD_FILENAME])
 
+    def test_with_special_char_causes_force(self):
+        change_stdout(ADD_OUTPUT_1)
+
+        p4 = p4lib.P4()
+
+        FILENAME = "//depot/file_speci@l_char.txt"
+
+        p4.add(FILENAME)
+        p4lib._run.assert_called_with(['p4', 'add', '-f', FILENAME])
+
     def test_can_specify_change(self):
         change_stdout(ADD_OUTPUT_1)
 
