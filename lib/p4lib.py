@@ -119,7 +119,14 @@ def _escapeArg(arg):
     #XXX There is a *lot* more that we should escape here.
     #XXX This is also not right on Linux, just try putting 'p4' is a dir
     #    with spaces.
-    return arg.replace('"', r'\"')
+    return arg.replace('"', r'\"').replace("@", "%40")
+
+
+def _hasSpecialChars(files):
+    for f in files:
+        if f.find("@") != -1:
+            return True
+    return False
 
 
 def _joinArgv(argv):
@@ -148,6 +155,9 @@ def _run(argv):
     """
     if type(argv) in (types.ListType, types.TupleType):
         cmd = _joinArgv(argv)
+        # For "add" command, files must have special characters and "-f" option
+        if "add" in argv:
+            cmd = cmd.replace("%40", "@")
     else:
         cmd = argv
     log.debug("Running '%s'..." % cmd)
@@ -1081,6 +1091,8 @@ class P4:
         """
         if type(files) in types.StringTypes:
             files = [files]
+        if _hasSpecialChars(files):
+            files = ['-f'] + files
         optv = []
         if change:
             optv += ['-c', str(change)]
