@@ -5,7 +5,8 @@ from test_utils import change_stdout, test_options, test_raw_result
 
 
 FILES_OUTPUT = """//depot/file.txt#2 - edit change 1234 (text)
-//depot/file2.txt#1 - add change 5678 (text)"""
+//depot/file2.txt#1 - add change 5678 (text)
+//depot/file3.txt#1 - move/delete change 9854 (text)"""
 
 
 class FilesTestCase(unittest.TestCase):
@@ -41,6 +42,10 @@ class FilesTestCase(unittest.TestCase):
         self.assertEqual("text", file_2["type"])
         self.assertEqual(5678, file_2["change"])
         self.assertEqual("add", file_2["action"])
+
+        file_3 = result[2]
+
+        self.assertEqual("move/delete", file_3["action"])
 
     def test_raw_result(self):
         test_raw_result(self, FILES_OUTPUT, "files", files="//depot/...")

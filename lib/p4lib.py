@@ -1298,10 +1298,10 @@ class P4:
         """
         def files_parse_cb(output):
             fileRe = re.compile("^(?P<depotFile>//.*?)#(?P<rev>\d+) - "
-                                "(?P<action>\w+) change (?P<change>\d+) "
+                                "(?P<action>[\w/]+) change (?P<change>\d+) "
                                 "\((?P<type>[\w+]+)\)$")
 
-            all_matches = (_match_or_raise(fileRe, l, "files")
+            all_matches = (_match_or_raise(fileRe, l.strip(), "files")
                            for l in output.splitlines(True))
             hits = [_values_to_int(match.groupdict(), ['rev', 'change'])
                     for match in all_matches]
