@@ -171,7 +171,8 @@ def _call_subprocess(arguments, stdin=None):
 
     retval = proc.returncode
 
-    os.environ['PWD'] = old_pwd
+    if old_pwd:
+        os.environ['PWD'] = old_pwd
 
     return output, error, retval
 
