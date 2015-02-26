@@ -126,7 +126,7 @@ def _escapeArg(arg):
     #XXX There is a *lot* more that we should escape here.
     #XXX This is also not right on Linux, just try putting 'p4' is a dir
     #    with spaces.
-    return arg.replace('"', r'\"').replace("@", "%40")
+    return arg.replace('"', r'\"')
 
 
 def _hasSpecialChars(files):
