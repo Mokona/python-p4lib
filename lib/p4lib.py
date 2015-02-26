@@ -188,9 +188,6 @@ def _run(argv):
     """
     if isinstance(argv, list) or isinstance(argv, tuple):
         cmd = _joinArgv(argv)
-        # For "add" command, files must have special characters and "-f" option
-        if "add" in argv:
-            cmd = cmd.replace("%40", "@")
     else:
         cmd = argv
 
@@ -265,9 +262,16 @@ def _argumentGenerator(arguments):
     return result
 
 
-def _normalizeFiles(files):
+def _forceFilesToList(files):
     if isinstance(files, str):
         return [files]
+    return files
+
+
+def _normalizeFiles(files):
+    files = _forceFilesToList(files)
+    if files:
+        files = [f.replace("@", "%40") for f in files]
     return files
 
 

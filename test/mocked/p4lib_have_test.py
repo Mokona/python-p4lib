@@ -41,6 +41,14 @@ class HaveTestCase(unittest.TestCase):
 
         p4lib._run.assert_called_with(['p4', 'have', 'file.cpp', 'file2.cpp'])
 
+    def test_escapes_arobas_in_filenames(self):
+        change_stdout(HAVE_OUTPUT)
+
+        p4 = p4lib.P4()
+        p4.have("//depot/file@1.cpp")
+
+        p4lib._run.assert_called_with(['p4', 'have', '//depot/file%401.cpp'])
+
     def test_raw_result(self):
         test_raw_result(self, HAVE_OUTPUT, "have", files="file.cpp")
 

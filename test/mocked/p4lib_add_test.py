@@ -77,9 +77,11 @@ class AddTestCase(unittest.TestCase):
         p4 = p4lib.P4()
 
         FILENAME = "//depot/file_speci@l_char.txt"
+        ESCAPED_FILENAME = "//depot/file_speci%40l_char.txt"
 
         p4.add(FILENAME)
-        p4lib._run.assert_called_with(['p4', 'add', '-f', FILENAME])
+        p4lib._run.assert_called_with(['p4', 'add', '-f',
+                                       ESCAPED_FILENAME])
 
     def test_can_specify_change(self):
         change_stdout(ADD_OUTPUT_1)
