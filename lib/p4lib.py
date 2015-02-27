@@ -268,11 +268,28 @@ def _forceFilesToList(files):
     return files
 
 
+def _filenameAndRevRangeTuple(filename):
+    filename_with_version = re.compile("^(.*)(@\d+)$")
+    filename_with_rev_range = re.compile("^(.*)(@\w+,@\w+)$")
+
+    filename_patterns = [filename_with_version,
+                         filename_with_rev_range]
+
+    for pattern in filename_patterns:
+        match = pattern.match(filename)
+        if match:
+            base_filename, rev_range = match.groups()
+            break
+    else:
+        base_filename, rev_range = (filename, "")
+
+    return (base_filename, rev_range)
+
+
 def _escapeSpecialCharsInFilename(filename):
-    filename_with_version = re.compile("^.*@\d+$")
-    if filename_with_version.match(filename):
-        return filename
-    return filename.replace("@", "%40")
+    filename, rev_range = _filenameAndRevRangeTuple(filename)
+    filename = filename.replace("@", "%40")
+    return filename + rev_range
 
 
 def _normalizeFiles(files):
