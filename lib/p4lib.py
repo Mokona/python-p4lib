@@ -268,10 +268,17 @@ def _forceFilesToList(files):
     return files
 
 
+def _escapeSpecialCharsInFilename(filename):
+    filename_with_version = re.compile("^.*@\d+$")
+    if filename_with_version.match(filename):
+        return filename
+    return filename.replace("@", "%40")
+
+
 def _normalizeFiles(files):
     files = _forceFilesToList(files)
     if files:
-        files = [f.replace("@", "%40") for f in files]
+        files = [_escapeSpecialCharsInFilename(f) for f in files]
     return files
 
 
