@@ -269,11 +269,20 @@ def _forceFilesToList(files):
 
 
 def _filenameAndRevRangeTuple(filename):
-    filename_with_version = re.compile("^(.*)(@\d+)$")
-    filename_with_rev_range = re.compile("^(.*)(@\w+,@\w+)$")
+    """ There's an ambiguity if we want to detect all possibilities of
+    '@' characters in the filename. Any '@' before a pattern of revision
+    ranges can be replaced. In other case, one way to detect where to
+    check for revision range validity, which in turn could emit misleading
+    error messages.
 
-    filename_patterns = [filename_with_version,
-                         filename_with_rev_range]
+    In most case, it's probably better to not replace '@' and let the client
+    do it. """
+    
+    filename_with_rev_range = re.compile("^(.*)(@\w+,@\w+)$")
+    filename_with_version = re.compile("^(.*)(@\w+)$")
+
+    filename_patterns = [filename_with_rev_range,
+                         filename_with_version]
 
     for pattern in filename_patterns:
         match = pattern.match(filename)
