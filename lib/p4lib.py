@@ -126,7 +126,7 @@ def _escapeArg(arg):
     #XXX There is a *lot* more that we should escape here.
     #XXX This is also not right on Linux, just try putting 'p4' is a dir
     #    with spaces.
-    return arg.replace('"', r'\"').replace("@", "%40")
+    return arg.replace('"', r'\"')
 
 
 def _hasSpecialChars(files):
@@ -188,9 +188,6 @@ def _run(argv):
     """
     if isinstance(argv, list) or isinstance(argv, tuple):
         cmd = _joinArgv(argv)
-        # For "add" command, files must have special characters and "-f" option
-        if "add" in argv:
-            cmd = cmd.replace("%40", "@")
     else:
         cmd = argv
 
@@ -265,9 +262,49 @@ def _argumentGenerator(arguments):
     return result
 
 
-def _normalizeFiles(files):
+def _forceFilesToList(files):
     if isinstance(files, str):
         return [files]
+    return files
+
+
+def _filenameAndRevRangeTuple(filename):
+    """ There's an ambiguity if we want to detect all possibilities of
+    '@' characters in the filename. Any '@' before a pattern of revision
+    ranges can be replaced. In other case, one way to detect where to
+    check for revision range validity, which in turn could emit misleading
+    error messages.
+
+    In most case, it's probably better to not replace '@' and let the client
+    do it. """
+    
+    filename_with_rev_range = re.compile("^(.*)(@\w+,@\w+)$")
+    filename_with_version = re.compile("^(.*)(@\w+)$")
+
+    filename_patterns = [filename_with_rev_range,
+                         filename_with_version]
+
+    for pattern in filename_patterns:
+        match = pattern.match(filename)
+        if match:
+            base_filename, rev_range = match.groups()
+            break
+    else:
+        base_filename, rev_range = (filename, "")
+
+    return (base_filename, rev_range)
+
+
+def _escapeSpecialCharsInFilename(filename):
+    filename, rev_range = _filenameAndRevRangeTuple(filename)
+    filename = filename.replace("@", "%40")
+    return filename + rev_range
+
+
+def _normalizeFiles(files):
+    files = _forceFilesToList(files)
+    if files:
+        files = [_escapeSpecialCharsInFilename(f) for f in files]
     return files
 
 

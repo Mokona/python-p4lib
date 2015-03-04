@@ -47,6 +47,27 @@ class FilesTestCase(unittest.TestCase):
 
         self.assertEqual("move/delete", file_3["action"])
 
+    def test_accepts_revision_range(self):
+        filename = "//depot/file.c@123,@now"
+
+        change_stdout(FILES_OUTPUT)
+
+        p4 = p4lib.P4()
+
+        p4.files(filename)
+        p4lib._run.assert_called_with(['p4', 'files', filename])
+
+    def test_accepts_revision_range_and_arobas(self):
+        filename = "//depot/file@.c@123,@now"
+        expected = "//depot/file%40.c@123,@now"
+
+        change_stdout(FILES_OUTPUT)
+
+        p4 = p4lib.P4()
+
+        p4.files(filename)
+        p4lib._run.assert_called_with(['p4', 'files', expected])
+
     def test_raw_result(self):
         test_raw_result(self, FILES_OUTPUT, "files", files="//depot/...")
 
