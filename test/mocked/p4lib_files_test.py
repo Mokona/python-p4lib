@@ -68,6 +68,17 @@ class FilesTestCase(unittest.TestCase):
         p4.files(filename)
         p4lib._run.assert_called_with(['p4', 'files', expected])
 
+    def test_accepts_revision_range_and_arobas_with_dates(self):
+        filename = "//depot/file@.c@2014/10/02,@2014/11/01"
+        expected = "//depot/file%40.c@2014/10/02,@2014/11/01"
+
+        change_stdout(FILES_OUTPUT)
+
+        p4 = p4lib.P4()
+
+        p4.files(filename)
+        p4lib._run.assert_called_with(['p4', 'files', expected])
+
     def test_raw_result(self):
         test_raw_result(self, FILES_OUTPUT, "files", files="//depot/...")
 

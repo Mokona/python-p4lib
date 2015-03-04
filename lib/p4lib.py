@@ -277,8 +277,8 @@ def _filenameAndRevRangeTuple(filename):
 
     In most case, it's probably better to not replace '@' and let the client
     do it. """
-    
-    filename_with_rev_range = re.compile("^(.*)(@\w+,@\w+)$")
+
+    filename_with_rev_range = re.compile("^(.*)(@[\w/]+,@[\w/]+)$")
     filename_with_version = re.compile("^(.*)(@\w+)$")
 
     filename_patterns = [filename_with_rev_range,
