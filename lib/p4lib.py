@@ -898,16 +898,32 @@ class P4:
             desc['description'] = ""
             for line in lines[2:filesIdx - 1]:
                 desc['description'] += line[1:].strip()  # drop the leading \t
+
             if shortForm:
                 diffsIdx = len(lines)
+                moveIdx = -1
             else:
+                try:
+                    moveIdx = lines.index("Moved files ...\n")
+                except ValueError:
+                    moveIdx = -1
                 diffsIdx = lines.index("Differences ...\n")
 
+            stopFilesIdx = diffsIdx - 1
+
+            if moveIdx != -1:
+                # ... //depot/file1.cpp#1 moved from ... //depot/file2.cpp#1
+                moveRe = re.compile('^... (?P<destDepotFile>.+?)#(?P<destRev>\d+) '
+                                    'moved from (?P<sourceDepotFile>.+?)#(?P<sourceRev>\d+)$')
+                all_matches = (_match_or_raise(moveRe, l, "describe")
+                               for l in lines[filesIdx + 2:moveIdx - 1])
+                stopFilesIdx = moveIdx - 1
+
             fileRe = re.compile('^... (?P<depotFile>.+?)#(?P<rev>\d+) '
-                                '(?P<action>\w+)$')
+                                '(?P<action>\w+(/\w+)?)$')
 
             all_matches = (_match_or_raise(fileRe, l, "describe")
-                           for l in lines[filesIdx + 2:diffsIdx - 1])
+                           for l in lines[filesIdx + 2:stopFilesIdx])
             desc['files'] = [_values_to_int(match.groupdict(), ['rev'])
                              for match in all_matches]
 
