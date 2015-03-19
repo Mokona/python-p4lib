@@ -36,6 +36,9 @@ DESCRIBE_OUTPUT = DESCRIBE_OUTPUT_BASE + """
 DESCRIBE_OUTPUT_LONG = DESCRIBE_OUTPUT_BASE + """
 Differences ...
 
+==== //depot/apps/px/ReadMe.txt#5 (text/utf8) ====
+DiffLine1
+
 """
 
 
