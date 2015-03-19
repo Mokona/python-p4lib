@@ -167,8 +167,11 @@ def _call_subprocess(arguments, stdin=None):
                             stderr=subprocess.PIPE,
                             universal_newlines=True)
     output, error = proc.communicate()
-    output = output.decode()
-    error = error.decode()
+
+    if not isinstance(output, str):
+        # Then we got byte arrays
+        output = output.decode()
+        error = error.decode()
 
     retval = proc.returncode
 
