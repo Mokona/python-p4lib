@@ -22,6 +22,10 @@ Change 4567 on 2002/05/09 by mokona@other
 \t%s
 """ % (CL_1234_DESC_L1, CL_1234_DESC_L2, CL_4567_DESC)
 
+CHANGES_SHORT_MISSING_END_QUOTE = \
+    """Change 1234 on 2002/05/08 by mtrent@local *pending* 'a message
+Change 4567 on 2002/05/09 by mokona@other 'another message"""
+
 
 class ChangesTestCase(unittest.TestCase):
     def setUp(self):
@@ -121,6 +125,17 @@ class ChangesTestCase(unittest.TestCase):
         self.assertEqual("mokona", second["user"])
         self.assertEqual(4567, second["change"])
         self.assertEqual(CL_4567_DESC + "\n", second["description"])
+
+    def test_can_parse_message_with_missing_end_quote(self):
+        change_stdout(CHANGES_SHORT_MISSING_END_QUOTE)
+
+        p4 = p4lib.P4()
+
+        result = p4.changes(longOutput=False)
+
+        self.assertEqual(2, len(result))
+        self.assertEqual("a message", result[0]["description"])
+        self.assertEqual("another message", result[1]["description"])
 
     def test_raw_result(self):
         test_raw_result(self, CHANGES_SHORT, "changes")
