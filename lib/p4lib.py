@@ -1118,7 +1118,7 @@ class P4:
                 changeRe = re.compile("^Change (?P<change>\d+) on "
                                       "(?P<date>[\d/]+) by (?P<user>[^\s@]+)@"
                                       "(?P<client>[^\s@]+) (\*pending\* )?"
-                                      "'(?P<description>.*?)'$")
+                                      "'(?P<description>.*?)'?$")
 
                 all_matches = (_match_or_raise(changeRe, l, "changes")
                                for l in output.splitlines(True))
