@@ -41,6 +41,15 @@ DiffLine1
 
 """
 
+DESCRIBE_OUTPUT_MOVE_DELETE = DESCRIBE_OUTPUT_BASE + """
+Moved files ...
+
+... //depot/file1.cpp#1 moved from ... //depot/file2.cpp#1
+
+Differences ...
+
+"""
+
 
 class DescribeTestCase(unittest.TestCase):
     def setUp(self):
@@ -88,8 +97,25 @@ class DescribeTestCase(unittest.TestCase):
         self._common_asserts(result)
         self.assertIn("diff", result)
 
+    def test_with_change_long_form_with_move_delete(self):
+        change_stdout(DESCRIBE_OUTPUT_MOVE_DELETE)
+
+        p4 = p4lib.P4()
+
+        result = p4.describe(change=CHANGE_NUM)
+        p4lib._run.assert_called_with(['p4', 'describe', '1234'])
+
+        self._common_asserts(result)
+        self.assertIn("diff", result)
+
     def test_raw_result(self):
-        test_raw_result(self, DESCRIBE_OUTPUT_LONG, "describe", change=CHANGE_NUM)
+        test_raw_result(self, DESCRIBE_OUTPUT_LONG, "describe",
+                        change=CHANGE_NUM)
+
+        p4 = p4lib.P4()
+
+        result = p4.describe(change=CHANGE_NUM)
+        self._common_asserts(result)
 
     def test_with_options(self):
         change_stdout(DESCRIBE_OUTPUT_LONG)
